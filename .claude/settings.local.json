@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"d:\\\\FRC10000\\\\gradle\\\\SUMMER2026-REBUILT-FRC10000\" -Recurse -Directory | Select-Object -First 30 | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"d:\\\\FRC10000\\\\gradle\\\\SUMMER2026-REBUILT-FRC10000\\\\src\" -Recurse -File | Where-Object { $_.Extension -eq \".java\" } | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"d:\\\\FRC10000\\\\gradle\\\\SUMMER2026-REBUILT-FRC10000\" -File | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem -Path \"d:\\\\FRC10000\\\\gradle\\\\SUMMER2026-REBUILT-FRC10000\\\\src\" -Recurse | ForEach-Object { if \\($_.PSIsContainer\\) { Write-Host \"DIR: $\\($_.FullName\\)\" } else { Write-Host \"FILE: $\\($_.FullName\\)\" } })",
+      "Bash(Select-String -Path \"d:\\\\FRC10000\\\\TeamCode\\\\SUMMER2026-REBUILT-FRC10000\\\\src\\\\main\\\\deploy\\\\swerve\\\\neo\\\\modules\\\\*.json\" -Pattern \"absoluteEncoderOffset\")"
+    ]
+  }
+}
