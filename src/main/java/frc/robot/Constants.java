@@ -49,7 +49,7 @@ public final class Constants
     public static final boolean DRIVE_ENABLED  = false;
 
     // Vision alignment
-    public static final boolean VISION_DRIVE_ENABLED = true; // Enable Limelight pose estimation
+    public static final boolean VISION_DRIVE_ENABLED = false; // Disable Limelight for manual testing
     public static final double  AIM_P_GAIN           = 0.05; // P-gain for vision target aiming
   }
 
@@ -125,7 +125,7 @@ public final class Constants
 
       // Shooting state
       public static final double kShootFeederSpeed = 0.6;
-      public static final double kShootWheelSpeed = 0.8;
+      public static final double kShootWheelSpeed = 0.5;
   }
 
   public static final class ShooterLookupConstants {

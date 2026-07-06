@@ -52,31 +52,25 @@ public class AimAndSpinUpCommand extends Command {
 
     @Override
     public void execute() {
-        // 1. AIM TURRET: Drive turret to center the target (tx -> 0)
-        if (vision.hasTarget()) {
+        if (vision != null && vision.hasTarget()) {
+            // Aim turret to center the target
             turret.setTargetAngle(-vision.getTargetTx());
-        }
 
-        // 2. LOOKUP SHOOTER PARAMS from distance
-        double distance = vision.getEstimatedDistance();
-        double pivotAngle = ShooterLookup.getPivotAngle(distance);
-        double rpm = ShooterLookup.getRPM(distance);
+            // Lookup shooter params from distance
+            double distance = vision.getEstimatedDistance();
+            pivot.setTargetAngle(ShooterLookup.getPivotAngle(distance));
+            flywheel.setTargetRPM(ShooterLookup.getRPM(distance));
 
-        // 3. COMMAND PIVOT and FLYWHEEL
-        pivot.setTargetAngle(pivotAngle);
-        flywheel.setTargetRPM(rpm);
-
-        // 4. DRIVE-BY-AIMING: Override chassis rotation with vision, keep driver translation
-        if (drivebase != null && translationSupplier != null) {
-            ChassisSpeeds speeds = translationSupplier.get();
-            if (vision.hasTarget()) {
+            // Drive-by-aiming
+            if (drivebase != null && translationSupplier != null) {
+                ChassisSpeeds speeds = translationSupplier.get();
                 speeds = new ChassisSpeeds(
                     speeds.vxMetersPerSecond,
                     speeds.vyMetersPerSecond,
                     -vision.getTargetTx() * Constants.OperatorConstants.AIM_P_GAIN
                 );
+                drivebase.getSwerveDrive().driveFieldOriented(speeds);
             }
-            drivebase.getSwerveDrive().driveFieldOriented(speeds);
         }
     }
 

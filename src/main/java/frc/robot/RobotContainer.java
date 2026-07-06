@@ -126,9 +126,9 @@ public class RobotContainer {
     }
 
     // Right Bumper: Pass/shoot preset (no vision, fixed RPM + pivot angle)
-    driverXbox.rightBumper().whileTrue(
-        new PassShootCommand(turret, flywheel, pivot, PASS_RPM, PASS_PIVOT_ANGLE, 0)
-    );
+    // driverXbox.rightBumper().whileTrue(
+    //     new PassShootCommand(turret, flywheel, pivot, PASS_RPM, PASS_PIVOT_ANGLE, 0)
+    // );
 
     // --- MANUAL TEST (D-Pad) ---
 
