@@ -78,4 +78,31 @@ public final class Constants
       public static final double MAX_ROTATIONS = 0.25; 
       public static final double MIN_ROTATIONS = -0.25; 
   }
+
+  public static final class VisionConstants {
+      // Limelight Names (must match NetworkTables names in Limelight UI)
+      public static final String BACK_LIMELIGHT = "limelight-back";  // For odometry
+      public static final String FRONT_LIMELIGHT = "limelight-front"; // For targeting (on turret)
+      
+      // Turret-to-Camera transform (front Limelight on turret)
+      // Adjust these values based on your physical mounting
+      public static final double TURRET_CAM_X = 0.0;  // meters forward from turret pivot
+      public static final double TURRET_CAM_Y = 0.0;  // meters left of turret pivot
+      public static final double TURRET_CAM_Z = 0.2;  // meters up from turret pivot
+      public static final double TURRET_CAM_PITCH = 15.0; // degrees tilt up from horizontal
+      
+      // Vision standard deviations for pose estimation
+      public static final double[] SINGLE_TAG_STD_DEV = {4.0, 4.0, 8.0};
+      public static final double[] MULTI_TAG_STD_DEV = {0.5, 0.5, 1.0};
+  }
+
+  public static final class ShooterLookupConstants {
+      // Distance (meters) -> Pivot Angle (degrees) lookup
+      public static final double[] DISTANCE_TO_PIVOT_DISTANCE = {1.0, 2.0, 3.0, 4.0, 5.0};
+      public static final double[] DISTANCE_TO_PIVOT_ANGLE = {10.0, 20.0, 30.0, 40.0, 50.0};
+      
+      // Distance (meters) -> Flywheel RPM lookup
+      public static final double[] DISTANCE_TO_RPM_DISTANCE = {1.0, 2.0, 3.0, 4.0, 5.0};
+      public static final double[] DISTANCE_TO_RPM_RPM = {2000.0, 2500.0, 3000.0, 3500.0, 4000.0};
+  }
 }
