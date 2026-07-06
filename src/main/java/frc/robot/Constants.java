@@ -109,6 +109,20 @@ public final class Constants
       public static final double[] MULTI_TAG_STD_DEV = {0.5, 0.5, 1.0};
   }
 
+  public static final class FeederConstants {
+      public static final int kFeederMotorCanId = 34;
+      public static final int kFeederWheelMotorCanId = 35;
+
+      // Set true to flip the motor's forward direction
+      public static final boolean kFeederMotorInverted = false;
+      public static final boolean kFeederWheelMotorInverted = true; // X44 wheel spins opposite
+
+      public static final double kFeederMaxOutput = 1.0;
+      public static final double kFeederWheelMaxOutput = 1.0;
+      public static final double kFeederWheelCurrentLimit = 30.0;
+      public static final double kFeederMotorCurrentLimit = 30.0;
+  }
+
   public static final class ShooterLookupConstants {
       // Distance (meters) -> Pivot Angle (degrees) lookup
       public static final double[] DISTANCE_TO_PIVOT_DISTANCE = {1.0, 2.0, 3.0, 4.0, 5.0};
