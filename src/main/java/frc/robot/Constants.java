@@ -112,6 +112,7 @@ public final class Constants
   public static final class FeederConstants {
       public static final int kFeederMotorCanId = 34;
       public static final int kFeederWheelMotorCanId = 35;
+      public static final int kFeederWheelFollowerCanId = 36;
 
       // Set true to flip the motor's forward direction
       public static final boolean kFeederMotorInverted = false;

@@ -2,14 +2,17 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.FeederConstants;
 
 public class FeederSubsystem extends SubsystemBase {
   private final TalonFX m_feederMotor = new TalonFX(FeederConstants.kFeederMotorCanId);
   private final TalonFX m_feederWheelMotor = new TalonFX(FeederConstants.kFeederWheelMotorCanId);
+  private final TalonFX m_feederWheelFollower = new TalonFX(FeederConstants.kFeederWheelFollowerCanId);
 
   public FeederSubsystem() {
     // Feeder (pad) motor config
@@ -33,6 +36,10 @@ public class FeederSubsystem extends SubsystemBase {
         ? InvertedValue.Clockwise_Positive
         : InvertedValue.CounterClockwise_Positive;
     m_feederWheelMotor.getConfigurator().apply(wheelConfig);
+
+    // Follower: mirrors the wheel motor but spins opposite direction
+    m_feederWheelFollower.setControl(
+        new Follower(FeederConstants.kFeederWheelMotorCanId, MotorAlignmentValue.Opposed));
   }
 
   /**
@@ -46,6 +53,7 @@ public class FeederSubsystem extends SubsystemBase {
 
   /**
    * Runs the feeder wheel motor at the given speed.
+   * The follower motor automatically mirrors this in the opposite direction.
    *
    * @param speed Percent output from -1.0 to 1.0
    */
@@ -53,7 +61,7 @@ public class FeederSubsystem extends SubsystemBase {
     m_feederWheelMotor.set(Math.max(-FeederConstants.kFeederWheelMaxOutput, Math.min(speed, FeederConstants.kFeederWheelMaxOutput)));
   }
 
-  /** Stops both feeder motors. */
+  /** Stops all feeder motors. */
   public void stop() {
     m_feederMotor.set(0);
     m_feederWheelMotor.set(0);
