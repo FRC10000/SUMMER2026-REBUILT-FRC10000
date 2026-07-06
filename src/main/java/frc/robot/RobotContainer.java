@@ -9,7 +9,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants.OperatorConstants;
-import frc.robot.commands.AimAndSpinUpCommand;
 import frc.robot.commands.PassShootCommand;
 import frc.robot.subsystems.FeederSubsystem;
 import frc.robot.subsystems.FlywheelSubsystem;
@@ -35,15 +34,12 @@ public class RobotContainer {
   private final FeederSubsystem feeder = new FeederSubsystem();
   private final LimelightVisionSubsystem vision;
 
-  // Preset RPMs for pass/shoot (tune on real robot)
-  private static final double PASS_RPM = 2000.0;
-  private static final double PASS_PIVOT_ANGLE = 10.0; // degrees
+  // Pivot test: current angle tracker
+  private double pivotTestAngle = 0.0;
 
-  /**
-   * Field-Relative Control.
-   * Left Stick = Translate.
-   * Right Stick = Self-rotation (rotate in place).
-   */
+  private static final double PASS_RPM = 2000.0;
+  private static final double PASS_PIVOT_ANGLE = 10.0;
+
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(),
           () -> driverXbox.getLeftY(),
           () -> driverXbox.getLeftX())
@@ -57,21 +53,14 @@ public class RobotContainer {
 
     configureBindings();
 
-    // Register PathPlanner Named Commands
     NamedCommands.registerCommand("test", Commands.print("I EXIST"));
-
-    // Intake NamedCommands
     NamedCommands.registerCommand("intake", intake.acquireFuelCommand(() -> false));
     NamedCommands.registerCommand("intake_reverse", intake.acquireFuelCommand(() -> true));
     NamedCommands.registerCommand("retract_intake", intake.retractIntake());
-
-    // Shooter NamedCommands
     NamedCommands.registerCommand("spin_up_shooter",
         Commands.run(() -> flywheel.setTargetRPM(3000), flywheel));
     NamedCommands.registerCommand("stop_shooter",
         Commands.runOnce(flywheel::stop, flywheel));
-    NamedCommands.registerCommand("aim_and_shoot",
-        new AimAndSpinUpCommand(turret, flywheel, pivot, vision, drivebase, driveAngularVelocity));
     NamedCommands.registerCommand("pass_shoot",
         new PassShootCommand(turret, flywheel, pivot, PASS_RPM, PASS_PIVOT_ANGLE, 0));
 
@@ -80,69 +69,52 @@ public class RobotContainer {
   }
 
   private void configureBindings() {
-    // 1. Default drive command (only if drivetrain is enabled)
     if (OperatorConstants.DRIVE_ENABLED) {
       Command driveFieldOriented = drivebase.driveFieldOriented(driveAngularVelocity);
       drivebase.setDefaultCommand(driveFieldOriented);
     }
 
-    // 2. Driver button bindings
+    // --- GYRO ---
+    // Start + Back together: reset gyro
+    driverXbox.start().and(driverXbox.back())
+        .onTrue(Commands.runOnce(drivebase::zeroGyro));
 
-    // A: Reset gyroscope
-    driverXbox.a().onTrue(Commands.runOnce(drivebase::zeroGyro));
+    // --- PIVOT TEST (D-Pad) ---
+    // Up: +10°, Down: -10°, Left: stow (0°)
+    driverXbox.povUp().onTrue(Commands.runOnce(() -> {
+      pivotTestAngle = Math.min(pivotTestAngle + 10.0, 60.0);
+      pivot.setTargetAngle(pivotTestAngle);
+    }));
+    driverXbox.povDown().onTrue(Commands.runOnce(() -> {
+      pivotTestAngle = Math.max(pivotTestAngle - 10.0, 0.0);
+      pivot.setTargetAngle(pivotTestAngle);
+    }));
+    driverXbox.povLeft().onTrue(Commands.runOnce(() -> {
+      pivotTestAngle = 0.0;
+      pivot.setTargetAngle(0.0);
+    }));
 
-    // X: Chassis X-pattern lock
-    driverXbox.x().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
+    // --- FLYWHEEL TEST ---
+    // LB: 1000 RPM, RB: 2000 RPM, LT: 3000 RPM, A: stop
+    driverXbox.leftBumper().whileTrue(
+        Commands.run(() -> flywheel.setTargetRPM(1000), flywheel));
+    driverXbox.rightBumper().whileTrue(
+        Commands.run(() -> flywheel.setTargetRPM(2000), flywheel));
+    driverXbox.leftTrigger().whileTrue(
+        Commands.run(() -> flywheel.setTargetRPM(3000), flywheel));
+    driverXbox.a().onTrue(Commands.runOnce(flywheel::stop, flywheel));
+
+    // --- FEEDER TEST ---
+    // Y: feeder idle (slow reverse), X: feeder shoot
+    driverXbox.y().whileTrue(feeder.idleCommand());
+    driverXbox.x().whileTrue(feeder.shootCommand());
 
     // --- INTAKE ---
-
-    // Left Trigger: Deploy intake and acquire fuel
-    driverXbox.leftTrigger().whileTrue(intake.acquireFuelCommand(() -> false));
-    driverXbox.povUp().whileTrue(intake.acquireFuelCommand(() -> true));
-
-    // B: Retract intake
     driverXbox.b().onTrue(intake.retractIntake());
 
-    // --- FEEDER (TEST) ---
-
-    // Y: Feeder idle (slowly reverse)
-    driverXbox.y().whileTrue(feeder.idleCommand());
-
-    // Left Bumper: Feeder shoot (wheel 80%, feeder 60%)
-    driverXbox.leftBumper().whileTrue(feeder.shootCommand());
-
     // --- SHOOTER ---
-
-    // Right Trigger: aim+shoot with vision, or preset shoot without vision
-    if (OperatorConstants.VISION_DRIVE_ENABLED) {
-      if (OperatorConstants.DRIVE_ENABLED) {
-        driverXbox.rightTrigger().whileTrue(
-            new AimAndSpinUpCommand(turret, flywheel, pivot, vision, drivebase, driveAngularVelocity)
-        );
-      } else {
-        driverXbox.rightTrigger().whileTrue(
-            new AimAndSpinUpCommand(turret, flywheel, pivot, vision, null, null)
-        );
-      }
-    } else {
-      // No vision: just shoot at preset RPM and pivot angle
-      driverXbox.rightTrigger().whileTrue(
-          new PassShootCommand(turret, flywheel, pivot, PASS_RPM, PASS_PIVOT_ANGLE, 0)
-      );
-    }
-
-    // Right Bumper: Pass/shoot preset (no vision, fixed RPM + pivot angle)
-    // driverXbox.rightBumper().whileTrue(
-    //     new PassShootCommand(turret, flywheel, pivot, PASS_RPM, PASS_PIVOT_ANGLE, 0)
-    // );
-
-    // --- MANUAL TEST (D-Pad) ---
-
-    driverXbox.povRight().whileTrue(Commands.run(() -> turret.setTargetAngle(45), turret));
-    driverXbox.povLeft().whileTrue(Commands.run(() -> turret.setTargetAngle(-45), turret));
-    driverXbox.povDown().whileTrue(Commands.run(() -> turret.setTargetAngle(0), turret));
-    driverXbox.back().whileTrue(Commands.run(() -> pivot.setTargetAngle(30.0), pivot));
-    driverXbox.start().whileTrue(Commands.run(() -> pivot.setTargetAngle(0.0), pivot));
+    driverXbox.rightTrigger().whileTrue(
+        new PassShootCommand(turret, flywheel, pivot, PASS_RPM, PASS_PIVOT_ANGLE, 0));
   }
 
   public Command getAutonomousCommand() {
