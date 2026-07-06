@@ -18,7 +18,7 @@ import edu.wpi.first.wpilibj2.command.WaitCommand;
 
 public class IntakeSubsystem extends SubsystemBase {
 
-    private final String CANIVORE_NAME = "canivore1";
+    private final String CANIVORE_NAME = "canivore";
 
     // // 伸缩机构 (Kraken X44)
     private final TalonFX m_deployLeft = new TalonFX(30);

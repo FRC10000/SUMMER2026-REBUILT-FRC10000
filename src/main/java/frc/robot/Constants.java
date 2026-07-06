@@ -49,4 +49,15 @@ public final class Constants
     public static final boolean VISION_DRIVE_ENABLED = true; // Enable PhotonVision pose estimation
     public static final double  AIM_P_GAIN           = 0.05; // P-gain for vision target aiming
   }
+
+  public static final class FlywheelConstants {
+        public static final int FRONT_RIGHT_ID = 10; 
+        public static final int BACK_LEFT_ID = 11;
+        public static final int FRONT_LEFT_ID = 12;
+        public static final int BACK_RIGHT_ID = 13;
+        
+        // You can also put your current limits and PID values here later!
+        public static final double STATOR_CURRENT_LIMIT = 60.0;
+    
+    }
 }
