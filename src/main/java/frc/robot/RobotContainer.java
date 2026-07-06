@@ -9,6 +9,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.commands.AimAndSpinUpCommand;
+import frc.robot.commands.PassShootCommand;
 import frc.robot.subsystems.FlywheelSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
@@ -16,7 +18,6 @@ import frc.robot.subsystems.LimelightVisionSubsystem;
 import frc.robot.subsystems.PivotSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.swervedrive.SwerveSubsystem;
-import frc.robot.commands.AimAndSpinUpCommand;
 import java.io.File;
 import swervelib.SwerveInputStream;
 
@@ -32,28 +33,31 @@ public class RobotContainer {
   private final PivotSubsystem pivot = new PivotSubsystem();
   private final LimelightVisionSubsystem vision;
 
+  // Preset RPMs for pass/shoot (tune on real robot)
+  private static final double PASS_RPM = 2000.0;
+  private static final double PASS_PIVOT_ANGLE = 10.0; // degrees
+
   /**
-   * Standard Field-Relative Control. 
-   * Left Stick = Translate. 
-   * Triggers = Rotate (Left Trigger turning left/CCW, Right Trigger turning right/CW).
+   * Field-Relative Control.
+   * Left Stick = Translate.
+   * Right Stick = Self-rotation (rotate in place).
    */
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(),
           () -> driverXbox.getLeftY(),
           () -> driverXbox.getLeftX())
-      .withControllerRotationAxis(() -> driverXbox.getLeftTriggerAxis() - driverXbox.getRightTriggerAxis())
+      .withControllerRotationAxis(() -> -driverXbox.getRightY())
       .deadband(OperatorConstants.DEADBAND)
       .scaleTranslation(0.2)
       .allianceRelativeControl(true);
 
   public RobotContainer() {
-    // Initialize vision from the swerve subsystem's Limelight setup
     vision = drivebase.getVision();
 
     configureBindings();
-    
+
     // Register PathPlanner Named Commands
     NamedCommands.registerCommand("test", Commands.print("I EXIST"));
-    
+
     // Intake NamedCommands
     NamedCommands.registerCommand("intake", intake.acquireFuelCommand(() -> false));
     NamedCommands.registerCommand("intake_reverse", intake.acquireFuelCommand(() -> true));
@@ -66,52 +70,53 @@ public class RobotContainer {
         Commands.runOnce(flywheel::stop, flywheel));
     NamedCommands.registerCommand("aim_and_shoot",
         new AimAndSpinUpCommand(turret, flywheel, pivot, vision, drivebase, driveAngularVelocity));
-    
+    NamedCommands.registerCommand("pass_shoot",
+        new PassShootCommand(turret, flywheel, pivot, PASS_RPM, PASS_PIVOT_ANGLE, 0));
+
     autoChooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData("Auto Choose", autoChooser);
   }
 
   private void configureBindings() {
-    // 1. Default drive command
+    // 1. Default drive command (left stick translate, right stick rotate)
     Command driveFieldOriented = drivebase.driveFieldOriented(driveAngularVelocity);
     drivebase.setDefaultCommand(driveFieldOriented);
 
     // 2. Driver button bindings
 
-    // LB + RB: Reset gyroscope
-    driverXbox.leftBumper().and(driverXbox.rightBumper())
-        .onTrue(Commands.runOnce(drivebase::zeroGyro));
+    // A: Reset gyroscope
+    driverXbox.a().onTrue(Commands.runOnce(drivebase::zeroGyro));
 
     // X: Chassis X-pattern lock
     driverXbox.x().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
 
-    // Y: Deploy intake and acquire fuel
-    driverXbox.y().whileTrue(intake.acquireFuelCommand(() -> false));
+    // --- INTAKE ---
+
+    // Left Trigger: Deploy intake and acquire fuel
+    driverXbox.leftTrigger().whileTrue(intake.acquireFuelCommand(() -> false));
     driverXbox.povUp().whileTrue(intake.acquireFuelCommand(() -> true));
 
-    // A: Retract intake
-    driverXbox.a().onTrue(intake.retractIntake());
+    // B: Retract intake
+    driverXbox.b().onTrue(intake.retractIntake());
 
-    // --- SHOOTER BINDINGS ---
+    // --- SHOOTER ---
 
     // Right Trigger: Aim turret, spin up flywheel, and drive-by-aim
     driverXbox.rightTrigger().whileTrue(
         new AimAndSpinUpCommand(turret, flywheel, pivot, vision, drivebase, driveAngularVelocity)
     );
 
-    // D-Pad Right: Turret to +45 degrees (manual test)
+    // Right Bumper: Pass/shoot preset (no vision, fixed RPM + pivot angle)
+    driverXbox.rightBumper().whileTrue(
+        new PassShootCommand(turret, flywheel, pivot, PASS_RPM, PASS_PIVOT_ANGLE, 0)
+    );
+
+    // --- MANUAL TEST (D-Pad) ---
+
     driverXbox.povRight().whileTrue(Commands.run(() -> turret.setTargetAngle(45), turret));
-
-    // D-Pad Left: Turret to -45 degrees
     driverXbox.povLeft().whileTrue(Commands.run(() -> turret.setTargetAngle(-45), turret));
-
-    // D-Pad Down: Turret to 0
     driverXbox.povDown().whileTrue(Commands.run(() -> turret.setTargetAngle(0), turret));
-
-    // Back: Pivot to 30 degrees
     driverXbox.back().whileTrue(Commands.run(() -> pivot.setTargetAngle(30.0), pivot));
-
-    // Start: Pivot to 0 (stow)
     driverXbox.start().whileTrue(Commands.run(() -> pivot.setTargetAngle(0.0), pivot));
   }
 
