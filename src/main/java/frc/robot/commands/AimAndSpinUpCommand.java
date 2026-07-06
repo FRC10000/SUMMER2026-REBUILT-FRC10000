@@ -44,7 +44,10 @@ public class AimAndSpinUpCommand extends Command {
         this.vision = vision;
         this.drivebase = drivebase;
         this.translationSupplier = translationSupplier;
-        addRequirements(turret, flywheel, pivot, drivebase);
+        addRequirements(turret, flywheel, pivot);
+        if (drivebase != null) {
+            addRequirements(drivebase);
+        }
     }
 
     @Override
@@ -64,15 +67,17 @@ public class AimAndSpinUpCommand extends Command {
         flywheel.setTargetRPM(rpm);
 
         // 4. DRIVE-BY-AIMING: Override chassis rotation with vision, keep driver translation
-        ChassisSpeeds speeds = translationSupplier.get();
-        if (vision.hasTarget()) {
-            speeds = new ChassisSpeeds(
-                speeds.vxMetersPerSecond,
-                speeds.vyMetersPerSecond,
-                -vision.getTargetTx() * Constants.OperatorConstants.AIM_P_GAIN
-            );
+        if (drivebase != null && translationSupplier != null) {
+            ChassisSpeeds speeds = translationSupplier.get();
+            if (vision.hasTarget()) {
+                speeds = new ChassisSpeeds(
+                    speeds.vxMetersPerSecond,
+                    speeds.vyMetersPerSecond,
+                    -vision.getTargetTx() * Constants.OperatorConstants.AIM_P_GAIN
+                );
+            }
+            drivebase.getSwerveDrive().driveFieldOriented(speeds);
         }
-        drivebase.getSwerveDrive().driveFieldOriented(speeds);
     }
 
     @Override

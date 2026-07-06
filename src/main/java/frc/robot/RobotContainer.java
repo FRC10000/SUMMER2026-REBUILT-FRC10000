@@ -78,9 +78,11 @@ public class RobotContainer {
   }
 
   private void configureBindings() {
-    // 1. Default drive command (left stick translate, right stick rotate)
-    Command driveFieldOriented = drivebase.driveFieldOriented(driveAngularVelocity);
-    drivebase.setDefaultCommand(driveFieldOriented);
+    // 1. Default drive command (only if drivetrain is enabled)
+    if (OperatorConstants.DRIVE_ENABLED) {
+      Command driveFieldOriented = drivebase.driveFieldOriented(driveAngularVelocity);
+      drivebase.setDefaultCommand(driveFieldOriented);
+    }
 
     // 2. Driver button bindings
 
@@ -101,10 +103,17 @@ public class RobotContainer {
 
     // --- SHOOTER ---
 
-    // Right Trigger: Aim turret, spin up flywheel, and drive-by-aim
-    driverXbox.rightTrigger().whileTrue(
-        new AimAndSpinUpCommand(turret, flywheel, pivot, vision, drivebase, driveAngularVelocity)
-    );
+    // Right Trigger: Aim turret, spin up flywheel (drive-by-aim only if drivetrain enabled)
+    if (OperatorConstants.DRIVE_ENABLED) {
+      driverXbox.rightTrigger().whileTrue(
+          new AimAndSpinUpCommand(turret, flywheel, pivot, vision, drivebase, driveAngularVelocity)
+      );
+    } else {
+      // Drivetrain disabled: only aim turret + spin flywheel (no chassis drive)
+      driverXbox.rightTrigger().whileTrue(
+          new AimAndSpinUpCommand(turret, flywheel, pivot, vision, null, null)
+      );
+    }
 
     // Right Bumper: Pass/shoot preset (no vision, fixed RPM + pivot angle)
     driverXbox.rightBumper().whileTrue(

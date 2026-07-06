@@ -45,8 +45,11 @@ public final class Constants
     // Joystick Deadband
     public static final double DEADBAND        = 0.2;
 
+    // Set to false to disable drivetrain (for subsystem testing)
+    public static final boolean DRIVE_ENABLED  = false;
+
     // Vision alignment
-    public static final boolean VISION_DRIVE_ENABLED = true; // Enable PhotonVision pose estimation
+    public static final boolean VISION_DRIVE_ENABLED = true; // Enable Limelight pose estimation
     public static final double  AIM_P_GAIN           = 0.05; // P-gain for vision target aiming
   }
 
