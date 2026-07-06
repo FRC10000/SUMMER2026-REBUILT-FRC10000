@@ -114,10 +114,6 @@ public final class Constants
       public static final int kFeederWheelMotorCanId = 35;
       public static final int kFeederWheelFollowerCanId = 36;
 
-      // Set true to flip the motor's forward direction
-      public static final boolean kFeederMotorInverted = false;
-      public static final boolean kFeederWheelMotorInverted = true; // X44 wheel spins opposite
-
       public static final double kFeederMaxOutput = 1.0;
       public static final double kFeederWheelMaxOutput = 1.0;
       public static final double kFeederWheelCurrentLimit = 30.0;

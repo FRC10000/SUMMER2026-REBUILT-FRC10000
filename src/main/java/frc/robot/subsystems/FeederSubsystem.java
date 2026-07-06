@@ -15,53 +15,32 @@ public class FeederSubsystem extends SubsystemBase {
   private final TalonFX m_feederWheelFollower = new TalonFX(FeederConstants.kFeederWheelFollowerCanId);
 
   public FeederSubsystem() {
-    // Feeder (pad) motor config
     TalonFXConfiguration feederConfig = new TalonFXConfiguration();
     feederConfig.CurrentLimits =
         new CurrentLimitsConfigs()
             .withStatorCurrentLimit(FeederConstants.kFeederMotorCurrentLimit)
             .withStatorCurrentLimitEnable(true);
-    feederConfig.MotorOutput.Inverted = FeederConstants.kFeederMotorInverted
-        ? InvertedValue.Clockwise_Positive
-        : InvertedValue.CounterClockwise_Positive;
     m_feederMotor.getConfigurator().apply(feederConfig);
 
-    // Feeder wheel motor config (X44, opposite rotation)
     TalonFXConfiguration wheelConfig = new TalonFXConfiguration();
     wheelConfig.CurrentLimits =
         new CurrentLimitsConfigs()
             .withStatorCurrentLimit(FeederConstants.kFeederWheelCurrentLimit)
             .withStatorCurrentLimitEnable(true);
-    wheelConfig.MotorOutput.Inverted = FeederConstants.kFeederWheelMotorInverted
-        ? InvertedValue.Clockwise_Positive
-        : InvertedValue.CounterClockwise_Positive;
     m_feederWheelMotor.getConfigurator().apply(wheelConfig);
 
-    // Follower: mirrors the wheel motor but spins opposite direction
     m_feederWheelFollower.setControl(
         new Follower(FeederConstants.kFeederWheelMotorCanId, MotorAlignmentValue.Opposed));
   }
 
-  /**
-   * Runs the feeder pad motor at the given speed.
-   *
-   * @param speed Percent output from -1.0 to 1.0
-   */
   public void run(double speed) {
     m_feederMotor.set(Math.max(-FeederConstants.kFeederMaxOutput, Math.min(speed, FeederConstants.kFeederMaxOutput)));
   }
 
-  /**
-   * Runs the feeder wheel motor at the given speed.
-   * The follower motor automatically mirrors this in the opposite direction.
-   *
-   * @param speed Percent output from -1.0 to 1.0
-   */
   public void runWheel(double speed) {
     m_feederWheelMotor.set(Math.max(-FeederConstants.kFeederWheelMaxOutput, Math.min(speed, FeederConstants.kFeederWheelMaxOutput)));
   }
 
-  /** Stops all feeder motors. */
   public void stop() {
     m_feederMotor.set(0);
     m_feederWheelMotor.set(0);
