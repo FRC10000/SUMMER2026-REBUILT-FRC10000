@@ -14,13 +14,10 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import frc.robot.subsystems.swervedrive.Vision.Cameras;
+import frc.robot.subsystems.LimelightVisionSubsystem;
 
 import java.io.File;
-import java.util.Optional;
 import java.util.function.Supplier;
-
-import org.photonvision.targeting.PhotonPipelineResult;
 
 import swervelib.SwerveDrive;
 import swervelib.parser.SwerveDriveConfiguration;
@@ -32,7 +29,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   private final SwerveDrive swerveDrive;
   private final boolean visionDriveTest = Constants.OperatorConstants.VISION_DRIVE_ENABLED;
-  private Vision vision;
+  private LimelightVisionSubsystem vision;
 
   public SwerveSubsystem(File directory) {
     SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
@@ -48,21 +45,25 @@ public class SwerveSubsystem extends SubsystemBase {
     swerveDrive.setModuleEncoderAutoSynchronize(false, 1); 
 
     if (visionDriveTest) {
-      setupPhotonVision();
+      setupLimelightVision();
       swerveDrive.stopOdometryThread();
     }
     setupPathPlanner();
   }
 
-  public void setupPhotonVision() {
-    vision = new Vision(swerveDrive::getPose, swerveDrive.field);
+  public void setupLimelightVision() {
+    vision = new LimelightVisionSubsystem(swerveDrive);
+  }
+
+  public LimelightVisionSubsystem getVision() {
+    return vision;
   }
 
   @Override
   public void periodic() {
     if (visionDriveTest) {
       swerveDrive.updateOdometry();
-      vision.updatePoseEstimation(swerveDrive);
+      // LimelightVisionSubsystem handles vision pose injection in its own periodic()
     }
   }
 
@@ -120,36 +121,29 @@ public class SwerveSubsystem extends SubsystemBase {
     return run(() -> swerveDrive.driveFieldOriented(velocity.get()));
   }
 
-/**
-   * Aim the robot at the target returned by PhotonVision while allowing manual translation.
+  /**
+   * Drive with manual translation but vision-controlled rotation.
+   * Used during aiming: left stick translates, Limelight tx controls chassis rotation.
    *
-   * @param camera The specific camera/Limelight to use for targeting.
    * @param translationSupplier Supplier of ChassisSpeeds (usually your SwerveInputStream).
-   * @return A Command that continuously aligns the robot while allowing the driver to move.
+   * @param vision              The LimelightVisionSubsystem to read target offset from.
+   * @return A Command that drives translation from sticks but rotation from vision.
    */
-  public Command aimAtTarget(Cameras camera, Supplier<ChassisSpeeds> translationSupplier) {
+  public Command driveFieldOrientedAiming(Supplier<ChassisSpeeds> translationSupplier,
+                                          LimelightVisionSubsystem vision) {
     return run(() -> {
-      // 1. Get the normal teleop translation speeds from the joysticks.
-      // This perfectly preserves your deadbands, max speed scaling, and alliance flipping!
       ChassisSpeeds speeds = translationSupplier.get();
-      
-      // 2. Check vision for targets
-      Optional<PhotonPipelineResult> resultO = camera.getBestResult();
-      
-      if (resultO.isPresent() && resultO.get().hasTargets()) {
-        // Calculate rotational speed (P-Loop)
-        double yawError = resultO.get().getBestTarget().getYaw();
-        
-        // Overwrite the joystick's rotation with our vision math
-        speeds.omegaRadiansPerSecond = yawError * Constants.OperatorConstants.AIM_P_GAIN;
+      if (vision.hasTarget()) {
+        // Override rotation with vision P-loop
+        speeds = new ChassisSpeeds(
+            speeds.vxMetersPerSecond,
+            speeds.vyMetersPerSecond,
+            -vision.getTargetTx() * Constants.OperatorConstants.AIM_P_GAIN
+        );
       }
-
-      // 3. Command the swerve drive using the combined X/Y from the driver and Rotation from vision
       swerveDrive.driveFieldOriented(speeds);
     });
   }
-
-
 
   public void resetOdometry(Pose2d initialHolonomicPose) {
     swerveDrive.resetOdometry(initialHolonomicPose);

@@ -84,8 +84,18 @@ public final class Constants
       public static final String BACK_LIMELIGHT = "limelight-back";  // For odometry
       public static final String FRONT_LIMELIGHT = "limelight-front"; // For targeting (on turret)
       
+      // Back Limelight (odometry) physical mount
+      public static final double BACK_CAM_HEIGHT_METERS = 0.0;   // TODO: measure height from floor
+      public static final double BACK_CAM_MOUNT_ANGLE_DEG = 0.0; // TODO: measure tilt from horizontal
+
+      // Front Limelight (turret targeting) physical mount
+      public static final double FRONT_CAM_HEIGHT_METERS = 0.0;   // TODO: measure height from floor
+      public static final double FRONT_CAM_MOUNT_ANGLE_DEG = 0.0; // TODO: measure tilt from horizontal
+
+      // AprilTag target height (center of tag, 2025 Reefscape)
+      public static final double TARGET_HEIGHT_METERS = 0.0; // TODO: measure
+
       // Turret-to-Camera transform (front Limelight on turret)
-      // Adjust these values based on your physical mounting
       public static final double TURRET_CAM_X = 0.0;  // meters forward from turret pivot
       public static final double TURRET_CAM_Y = 0.0;  // meters left of turret pivot
       public static final double TURRET_CAM_Z = 0.2;  // meters up from turret pivot
