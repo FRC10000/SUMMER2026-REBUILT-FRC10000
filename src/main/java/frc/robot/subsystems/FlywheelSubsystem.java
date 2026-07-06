@@ -10,13 +10,12 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.FlywheelConstants;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
-@SuppressWarnings("removal")
 public class FlywheelSubsystem extends SubsystemBase {
 
-    private final TalonFX m_frontRight = new TalonFX(FlywheelConstants.FRONT_RIGHT_ID, "canivore");
-    private final TalonFX m_backLeft = new TalonFX(FlywheelConstants.BACK_LEFT_ID, "canivore");
-    private final TalonFX m_frontLeft = new TalonFX(FlywheelConstants.FRONT_LEFT_ID, "canivore");
-    private final TalonFX m_backRight = new TalonFX(FlywheelConstants.BACK_RIGHT_ID, "canivore");
+    private final TalonFX m_frontRight = new TalonFX(FlywheelConstants.FRONT_RIGHT_ID);
+    private final TalonFX m_backLeft = new TalonFX(FlywheelConstants.BACK_LEFT_ID);
+    private final TalonFX m_frontLeft = new TalonFX(FlywheelConstants.FRONT_LEFT_ID);
+    private final TalonFX m_backRight = new TalonFX(FlywheelConstants.BACK_RIGHT_ID);
 
     private final VelocityVoltage m_velocityRequest = new VelocityVoltage(0).withSlot(0);
 

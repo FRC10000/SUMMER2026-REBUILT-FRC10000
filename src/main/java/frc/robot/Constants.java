@@ -54,29 +54,26 @@ public final class Constants
   }
 
   public static final class FlywheelConstants {
-        public static final int FRONT_RIGHT_ID = 10; 
-        public static final int BACK_LEFT_ID = 11;
-        public static final int FRONT_LEFT_ID = 12;
-        public static final int BACK_RIGHT_ID = 13;
-        
-        // You can also put your current limits and PID values here later!
+        public static final int FRONT_RIGHT_ID = 4;
+        public static final int BACK_LEFT_ID = 5;
+        public static final int FRONT_LEFT_ID = 6;
+        public static final int BACK_RIGHT_ID = 7;
+
         public static final double STATOR_CURRENT_LIMIT = 60.0;
   }
 
   public static final class PivotConstants {
-      public static final int PIVOT_ID = 20; // TODO: Update ID
-      public static final double GEAR_RATIO = 320.0; // 320:1
-      
-      // Soft limits in DEGREES
-      public static final float MAX_ANGLE_DEG = 60.0f; 
-      public static final float MIN_ANGLE_DEG = 0.0f;  // Stowed position
+      public static final int PIVOT_ID = 25;
+      public static final double GEAR_RATIO = 320.0;
+
+      public static final float MAX_ANGLE_DEG = 60.0f;
+      public static final float MIN_ANGLE_DEG = 0.0f;
   }
 
   public static final class TurretConstants {
-      public static final int TURRET_ID = 21;
+      public static final int TURRET_ID = 24;
       public static final double GEAR_RATIO = 400.0 / 14.0;
 
-      // 45 degrees each way = 0.125 rotations
       public static final double MAX_ROTATIONS = 0.125;
       public static final double MIN_ROTATIONS = -0.125;
   }

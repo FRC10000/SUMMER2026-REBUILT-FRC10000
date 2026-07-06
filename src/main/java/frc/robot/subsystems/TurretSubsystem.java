@@ -9,10 +9,9 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.TurretConstants;
 
-@SuppressWarnings("removal")
 public class TurretSubsystem extends SubsystemBase {
     
-    private final TalonFX m_turretMotor = new TalonFX(TurretConstants.TURRET_ID, "canivore");
+    private final TalonFX m_turretMotor = new TalonFX(TurretConstants.TURRET_ID);
     
     private final MotionMagicVoltage m_positionRequest = new MotionMagicVoltage(0).withSlot(0);
 
