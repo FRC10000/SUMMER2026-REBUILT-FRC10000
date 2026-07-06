@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.AimAndSpinUpCommand;
 import frc.robot.commands.PassShootCommand;
+import frc.robot.subsystems.FeederSubsystem;
 import frc.robot.subsystems.FlywheelSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
@@ -31,6 +32,7 @@ public class RobotContainer {
   private final FlywheelSubsystem flywheel = new FlywheelSubsystem();
   private final TurretSubsystem turret = new TurretSubsystem();
   private final PivotSubsystem pivot = new PivotSubsystem();
+  private final FeederSubsystem feeder = new FeederSubsystem();
   private final LimelightVisionSubsystem vision;
 
   // Preset RPMs for pass/shoot (tune on real robot)
@@ -100,6 +102,14 @@ public class RobotContainer {
 
     // B: Retract intake
     driverXbox.b().onTrue(intake.retractIntake());
+
+    // --- FEEDER (TEST) ---
+
+    // Y: Feeder idle (slowly reverse)
+    driverXbox.y().whileTrue(feeder.idleCommand());
+
+    // Left Bumper: Feeder shoot (wheel 80%, feeder 60%)
+    driverXbox.leftBumper().whileTrue(feeder.shootCommand());
 
     // --- SHOOTER ---
 
