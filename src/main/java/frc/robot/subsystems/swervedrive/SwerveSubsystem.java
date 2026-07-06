@@ -31,7 +31,7 @@ import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
 public class SwerveSubsystem extends SubsystemBase {
 
   private final SwerveDrive swerveDrive;
-  private final boolean visionDriveTest = true; // Set to true since you have Limelights
+  private final boolean visionDriveTest = Constants.OperatorConstants.VISION_DRIVE_ENABLED;
   private Vision vision;
 
   public SwerveSubsystem(File directory) {
@@ -92,10 +92,10 @@ public class SwerveSubsystem extends SubsystemBase {
           },
           this
       );
+      CommandScheduler.getInstance().schedule(PathfindingCommand.warmupCommand());
     } catch (Exception e) {
       e.printStackTrace();
     }
-    CommandScheduler.getInstance().schedule(PathfindingCommand.warmupCommand());
   }
 
   // Drive Methods
@@ -141,7 +141,7 @@ public class SwerveSubsystem extends SubsystemBase {
         double yawError = resultO.get().getBestTarget().getYaw();
         
         // Overwrite the joystick's rotation with our vision math
-        speeds.omegaRadiansPerSecond = yawError * 0.05; 
+        speeds.omegaRadiansPerSecond = yawError * Constants.OperatorConstants.AIM_P_GAIN;
       }
 
       // 3. Command the swerve drive using the combined X/Y from the driver and Rotation from vision

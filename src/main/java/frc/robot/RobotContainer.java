@@ -9,11 +9,11 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.swervedrive.SwerveSubsystem;
 import java.io.File;
 import swervelib.SwerveInputStream;
-import frc.robot.subsystems.swervedrive.Vision.Cameras;
 
 public class RobotContainer {
 
@@ -21,22 +21,25 @@ public class RobotContainer {
   private final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve/falcon"));
   private final LEDSubsystem led = new LEDSubsystem();
   private final SendableChooser<Command> autoChooser;
+  private final IntakeSubsystem intake = new IntakeSubsystem();
 
   /**
    * Standard Field-Relative Control. 
-   * Left Stick = Translate. Right Stick X = Rotate.
+   * Left Stick = Translate. 
+   * Triggers = Rotate (Left Trigger turning left/CCW, Right Trigger turning right/CW).
    */
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(),
           () -> driverXbox.getLeftY(),
           () -> driverXbox.getLeftX())
-      .withControllerRotationAxis(() -> -driverXbox.getRightX())
+      // 【关键改动】：使用 左扳机 - 右扳机。
+      // 左扳机按下时得正值 (向左/逆时针转)，右扳机按下时得负值 (向右/顺时针转)
+      // 如果你的机器人在测试时转向是反的，可以在前面加个负号： -(... - ...)
+      .withControllerRotationAxis(() -> driverXbox.getLeftTriggerAxis() - driverXbox.getRightTriggerAxis())
       .deadband(OperatorConstants.DEADBAND)
-      .scaleTranslation(0.8)
+      .scaleTranslation(0.2) // 保持你原有的平移限速
       .allianceRelativeControl(true);
-  SwerveInputStream driveDirectAngle = driveAngularVelocity.copy()
-      .withControllerHeadingAxis(() -> -driverXbox.getRightX(),
-                                 () -> -driverXbox.getRightY())
-      .headingWhile(() -> Math.hypot(driverXbox.getRightX(), driverXbox.getRightY()) > 0.33);
+
+  // 【已移除】删除了 driveDirectAngle，因为你不再使用右摇杆做朝向控制
 
   public RobotContainer() {
     configureBindings();
@@ -49,14 +52,26 @@ public class RobotContainer {
   }
 
   private void configureBindings() {
-    // 1. Set the correct default command
-    Command driveFieldOriented = drivebase.driveFieldOriented(driveDirectAngle);
+    // 1. 设置默认底盘指令 (仅使用 driveAngularVelocity)
+    Command driveFieldOriented = drivebase.driveFieldOriented(driveAngularVelocity);
     drivebase.setDefaultCommand(driveFieldOriented);
 
-    // 2. Driver Buttons
-    driverXbox.a().onTrue(Commands.runOnce(drivebase::zeroGyro)); // Zero Gyro
-    driverXbox.x().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly()); // X-Stance (Lock wheels)
-    driverXbox.b().whileTrue(drivebase.aimAtTarget(Cameras.CENTER_CAM, driveDirectAngle));
+    // 2. 驾驶员按键绑定
+
+    // 【关键改动】：LB 和 RB 同时按下，重置陀螺仪
+    driverXbox.leftBumper().and(driverXbox.rightBumper())
+        .onTrue(Commands.runOnce(drivebase::zeroGyro));
+
+    // X 键：底盘 X 态自锁 (保持原样)
+    driverXbox.x().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
+
+    // Y 键：放出 intake 并吸球 (因为不涉及反转，传 () -> false 即可)
+    // 松开 Y 键时，由于你之前写了 finallyDo()，它会自动切断电机动力并自然滑行
+    driverXbox.y().whileTrue(intake.acquireFuelCommand(() -> false));
+    driverXbox.povUp().whileTrue(intake.acquireFuelCommand(() -> true));
+
+    // A 键：主动收回 Intake (切回 Brake 模式并锁死在 0 度)
+    driverXbox.a().onTrue(intake.retractIntake());
   }
 
   public Command getAutonomousCommand() {

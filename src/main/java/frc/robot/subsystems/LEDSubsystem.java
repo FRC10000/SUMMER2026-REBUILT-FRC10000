@@ -13,7 +13,7 @@ public class LEDSubsystem extends SubsystemBase {
     private String m_lastState = "UNKNOWN";
 
     public LEDSubsystem() {
-        m_led = new AddressableLED(0); // RBG
+        m_led = new AddressableLED(0);
         m_ledBuffer = new AddressableLEDBuffer(60);
         m_led.setLength(m_ledBuffer.getLength());
         m_led.setData(m_ledBuffer);
