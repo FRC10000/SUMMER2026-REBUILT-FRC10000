@@ -118,6 +118,14 @@ public final class Constants
       public static final double kFeederWheelMaxOutput = 1.0;
       public static final double kFeederWheelCurrentLimit = 30.0;
       public static final double kFeederMotorCurrentLimit = 30.0;
+
+      // Idle state: slowly rotating inversely when not shooting
+      public static final double kIdleFeederSpeed = -0.15;
+      public static final double kIdleWheelSpeed = -0.15;
+
+      // Shooting state
+      public static final double kShootFeederSpeed = 0.6;
+      public static final double kShootWheelSpeed = 0.8;
   }
 
   public static final class ShooterLookupConstants {

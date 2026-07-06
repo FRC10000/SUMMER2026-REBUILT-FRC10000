@@ -6,6 +6,8 @@ import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.FeederConstants;
 
@@ -22,13 +24,16 @@ public class FeederSubsystem extends SubsystemBase {
             .withStatorCurrentLimitEnable(true);
     m_feederMotor.getConfigurator().apply(feederConfig);
 
+    // Wheel motor: anti-clockwise = forward
     TalonFXConfiguration wheelConfig = new TalonFXConfiguration();
     wheelConfig.CurrentLimits =
         new CurrentLimitsConfigs()
             .withStatorCurrentLimit(FeederConstants.kFeederWheelCurrentLimit)
             .withStatorCurrentLimitEnable(true);
+    wheelConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
     m_feederWheelMotor.getConfigurator().apply(wheelConfig);
 
+    // Follower: mirrors wheel motor but spins opposite
     m_feederWheelFollower.setControl(
         new Follower(FeederConstants.kFeederWheelMotorCanId, MotorAlignmentValue.Opposed));
   }
@@ -44,6 +49,30 @@ public class FeederSubsystem extends SubsystemBase {
   public void stop() {
     m_feederMotor.set(0);
     m_feederWheelMotor.set(0);
+  }
+
+  /** Idle: both motors slowly reverse to prevent ball buildup. */
+  public Command idleCommand() {
+    return Commands.runEnd(
+        () -> {
+          run(FeederConstants.kIdleFeederSpeed);
+          runWheel(FeederConstants.kIdleWheelSpeed);
+        },
+        () -> stop(),
+        this
+    );
+  }
+
+  /** Shooting: wheel at 80%, feeder at 60%. */
+  public Command shootCommand() {
+    return Commands.runEnd(
+        () -> {
+          run(FeederConstants.kShootFeederSpeed);
+          runWheel(FeederConstants.kShootWheelSpeed);
+        },
+        () -> stop(),
+        this
+    );
   }
 
   @Override
