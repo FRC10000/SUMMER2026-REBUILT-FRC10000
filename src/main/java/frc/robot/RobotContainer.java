@@ -113,15 +113,21 @@ public class RobotContainer {
 
     // --- SHOOTER ---
 
-    // Right Trigger: Aim turret, spin up flywheel (drive-by-aim only if drivetrain enabled)
-    if (OperatorConstants.DRIVE_ENABLED) {
-      driverXbox.rightTrigger().whileTrue(
-          new AimAndSpinUpCommand(turret, flywheel, pivot, vision, drivebase, driveAngularVelocity)
-      );
+    // Right Trigger: aim+shoot with vision, or preset shoot without vision
+    if (OperatorConstants.VISION_DRIVE_ENABLED) {
+      if (OperatorConstants.DRIVE_ENABLED) {
+        driverXbox.rightTrigger().whileTrue(
+            new AimAndSpinUpCommand(turret, flywheel, pivot, vision, drivebase, driveAngularVelocity)
+        );
+      } else {
+        driverXbox.rightTrigger().whileTrue(
+            new AimAndSpinUpCommand(turret, flywheel, pivot, vision, null, null)
+        );
+      }
     } else {
-      // Drivetrain disabled: only aim turret + spin flywheel (no chassis drive)
+      // No vision: just shoot at preset RPM and pivot angle
       driverXbox.rightTrigger().whileTrue(
-          new AimAndSpinUpCommand(turret, flywheel, pivot, vision, null, null)
+          new PassShootCommand(turret, flywheel, pivot, PASS_RPM, PASS_PIVOT_ANGLE, 0)
       );
     }
 
