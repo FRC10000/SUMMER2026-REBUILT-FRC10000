@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.FlywheelConstants;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
+@SuppressWarnings("removal")
 public class FlywheelSubsystem extends SubsystemBase {
 
     private final TalonFX m_frontRight = new TalonFX(FlywheelConstants.FRONT_RIGHT_ID);

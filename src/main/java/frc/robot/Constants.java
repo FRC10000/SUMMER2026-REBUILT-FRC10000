@@ -55,9 +55,9 @@ public final class Constants
 
   public static final class FlywheelConstants {
         public static final int FRONT_RIGHT_ID = 4;
-        public static final int BACK_LEFT_ID = 5;
-        public static final int FRONT_LEFT_ID = 6;
-        public static final int BACK_RIGHT_ID = 7;
+        public static final int BACK_LEFT_ID = 6;
+        public static final int FRONT_LEFT_ID = 7;
+        public static final int BACK_RIGHT_ID = 5;
 
         public static final double STATOR_CURRENT_LIMIT = 60.0;
   }

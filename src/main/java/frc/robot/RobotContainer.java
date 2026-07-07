@@ -82,7 +82,7 @@ public class RobotContainer {
     // --- PIVOT TEST (D-Pad) ---
     // Up: +10°, Down: -10°, Left: stow (0°)
     driverXbox.povUp().onTrue(Commands.runOnce(() -> {
-      pivotTestAngle = Math.min(pivotTestAngle + 10.0, 60.0);
+      pivotTestAngle = Math.min(pivotTestAngle + 10.0, 35.0);
       pivot.setTargetAngle(pivotTestAngle);
     }));
     driverXbox.povDown().onTrue(Commands.runOnce(() -> {
