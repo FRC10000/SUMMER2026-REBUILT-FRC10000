@@ -74,8 +74,8 @@ public final class Constants
       public static final int TURRET_ID = 24;
       public static final double GEAR_RATIO = 400.0 / 14.0;
 
-      public static final double MAX_ROTATIONS = 0.125;
-      public static final double MIN_ROTATIONS = -0.125;
+      public static final double MAX_ROTATIONS = 0.25;
+      public static final double MIN_ROTATIONS = -0.25;
   }
 
   public static final class VisionConstants {
@@ -121,7 +121,7 @@ public final class Constants
 
       // Shooting state
       public static final double kShootFeederSpeed = 0.6;
-      public static final double kShootWheelSpeed = 0.5;
+      public static final double kShootWheelSpeed = 0.7;
   }
 
   public static final class ShooterLookupConstants {

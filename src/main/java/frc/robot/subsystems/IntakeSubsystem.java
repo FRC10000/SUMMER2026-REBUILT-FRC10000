@@ -18,15 +18,13 @@ import edu.wpi.first.wpilibj2.command.WaitCommand;
 
 public class IntakeSubsystem extends SubsystemBase {
 
-    private final String CANIVORE_NAME = "canivore";
-
     // // 伸缩机构 (Kraken X44)
-    private final TalonFX m_deployLeft = new TalonFX(30);
-    private final TalonFX m_deployRight = new TalonFX(31);
+    private final TalonFX m_deployLeft = new TalonFX(30, "canivore");
+    private final TalonFX m_deployRight = new TalonFX(31, "canivore");
 
     // // Intake 滚轴电机
-    private final TalonFX m_rollerMaster = new TalonFX(32);
-    private final TalonFX m_rollerFollower = new TalonFX(33);
+    private final TalonFX m_rollerMaster = new TalonFX(32, "canivore");
+    private final TalonFX m_rollerFollower = new TalonFX(33, "canivore");
     
 
     // 声明一个基于电压的位置控制请求对象 (Slot 0)
@@ -74,19 +72,19 @@ public class IntakeSubsystem extends SubsystemBase {
     /**
      * 将推出机构移动到指定的角度 (以度为单位)
      */
-    public void setDeployAngle(double targetDegrees) {
-        double targetMechanismRotations = targetDegrees / 360.0;
-        double targetMotorRotations = targetMechanismRotations * GEAR_RATIO;
+    // public void setDeployAngle(double targetDegrees) {
+    //     double targetMechanismRotations = targetDegrees / 360.0;
+    //     double targetMotorRotations = targetMechanismRotations * GEAR_RATIO;
         
-        // 【关键】：检查当前误差是否小于 1 度，如果小于，就别给 PID 发指令了！
-        double currentLeftRotations = m_deployLeft.getPosition().getValueAsDouble();
-        if (Math.abs(currentLeftRotations - targetMotorRotations) < (1.0 / 360.0 * GEAR_RATIO)) {
-            return; // 已经在目标附近，什么都不做，电机保持静止
-        }
+    //     // 【关键】：检查当前误差是否小于 1 度，如果小于，就别给 PID 发指令了！
+    //     double currentLeftRotations = m_deployLeft.getPosition().getValueAsDouble();
+    //     if (Math.abs(currentLeftRotations - targetMotorRotations) < (1.0 / 360.0 * GEAR_RATIO)) {
+    //         return; // 已经在目标附近，什么都不做，电机保持静止
+    //     }
         
-        m_deployLeft.setControl(m_positionLeftRequest.withPosition(targetMotorRotations));
-        m_deployRight.setControl(m_positionRightRequest.withPosition(-targetMotorRotations));
-    }
+    //     m_deployLeft.setControl(m_positionLeftRequest.withPosition(targetMotorRotations));
+    //     m_deployRight.setControl(m_positionRightRequest.withPosition(-targetMotorRotations));
+    // }
 
     public void setRollerSpeed(double speed) {
         m_rollerMaster.set(speed);
@@ -98,35 +96,35 @@ public class IntakeSubsystem extends SubsystemBase {
         m_deployRight.setControl(new DutyCycleOut(0));
     }
 
-    public void setDeployBack() {
-        setDeployNeutralMode(NeutralModeValue.Brake);
-        setDeployAngle(0);
-    }
+    // public void setDeployBack() {
+    //     setDeployNeutralMode(NeutralModeValue.Brake);
+    //     setDeployAngle(0);
+    // }
 
     // // --- 封装为 Commands ---
 
     // 全自动进件指令：包含部署、等待、旋转，以及松开时的强制复位
     public Command acquireFuelCommand(BooleanSupplier reverse) {
         return Commands.sequence(
-            Commands.runOnce(() -> {
-                double left = m_deployLeft.getPosition().getValueAsDouble();
-                double right = -m_deployRight.getPosition().getValueAsDouble();
-                double diff = Math.abs((left - right) / GEAR_RATIO * 360.0);
+            // Commands.runOnce(() -> {
+            //     double left = m_deployLeft.getPosition().getValueAsDouble();
+            //     double right = -m_deployRight.getPosition().getValueAsDouble();
+            //     double diff = Math.abs((left - right) / GEAR_RATIO * 360.0);
 
-                if (diff > SYNC_TOLERANCE_DEGREES) {
-                    double averageDeg = (left + right) / GEAR_RATIO * 360.0;
-                    // 如果误差大，先同步（这里简单地强制设为 0 度对齐）
-                    setDeployAngle(averageDeg); 
-                } else {
-                    // 误差小，直接执行
-                    setDeployAngle(TARGET_DEPLOY_ANGLE_DEGREES);
-                }
-            }),
+            //     if (diff > SYNC_TOLERANCE_DEGREES) {
+            //         double averageDeg = (left + right) / GEAR_RATIO * 360.0;
+            //         // 如果误差大，先同步（这里简单地强制设为 0 度对齐）
+            //         setDeployAngle(averageDeg); 
+            //     } else {
+            //         // 误差小，直接执行
+            //         setDeployAngle(TARGET_DEPLOY_ANGLE_DEGREES);
+            //     }
+            // }),
             
-            Commands.runOnce(() -> System.out.println("Step 2: Waiting...")),
-            new WaitCommand(0.25),
+            // Commands.runOnce(() -> System.out.println("Step 2: Waiting...")),
+            // new WaitCommand(0.25),
             
-            Commands.runOnce(() -> System.out.println("Step 3: Starting Roller...")),
+            // Commands.runOnce(() -> System.out.println("Step 3: Starting Roller...")),
             this.run(() -> {
                 // 这里加个 log 看看是否每 20ms 都在触发
                 System.out.println("Roller is spinning!");
@@ -139,81 +137,81 @@ public class IntakeSubsystem extends SubsystemBase {
         });
     }
 
-    public Command retractIntake() {
-        return this.runOnce(() -> {
-            setRollerSpeed(0);
-            setDeployBack();
-        });
-    }
+    // public Command retractIntake() {
+    //     return this.runOnce(() -> {
+    //         setRollerSpeed(0);
+    //         setDeployBack();
+    //     });
+    // }
 
     /**
      * 安全伸出指令：如果两侧电机误差过大，先去到平均位置同步，再伸出到目标角度
      */
-    public Command safeDeployCommand(double targetDegrees) {
-        // 使用 deferredProxy 的原因是：我们需要在“每次按下按钮的那一瞬间”再去读取位置，
-        // 而不是在 RobotContainer 初始化时读取。
-        return Commands.deferredProxy(() -> {
+    // public Command safeDeployCommand(double targetDegrees) {
+    //     // 使用 deferredProxy 的原因是：我们需要在“每次按下按钮的那一瞬间”再去读取位置，
+    //     // 而不是在 RobotContainer 初始化时读取。
+    //     return Commands.deferredProxy(() -> {
             
-            // 1. 获取当前两侧的电机圈数
-            double leftMotorRots = m_deployLeft.getPosition().getValueAsDouble();
-            double rightMotorRots = m_deployRight.getPosition().getValueAsDouble();
+    //         // 1. 获取当前两侧的电机圈数
+    //         double leftMotorRots = m_deployLeft.getPosition().getValueAsDouble();
+    //         double rightMotorRots = m_deployRight.getPosition().getValueAsDouble();
 
-            // 由于右侧电机在指令中是反转的 (-targetMotorRotations)，
-            // 我们把右侧的圈数取反，统一到左侧的参考系下进行比较。
-            double rightRotsInLeftFrame = -rightMotorRots;
+    //         // 由于右侧电机在指令中是反转的 (-targetMotorRotations)，
+    //         // 我们把右侧的圈数取反，统一到左侧的参考系下进行比较。
+    //         double rightRotsInLeftFrame = -rightMotorRots;
 
-            // 2. 换算回机构的角度度数
-            double leftCurrentDeg = (leftMotorRots / GEAR_RATIO) * 360.0;
-            double rightCurrentDeg = (rightRotsInLeftFrame / GEAR_RATIO) * 360.0;
+    //         // 2. 换算回机构的角度度数
+    //         double leftCurrentDeg = (leftMotorRots / GEAR_RATIO) * 360.0;
+    //         double rightCurrentDeg = (rightRotsInLeftFrame / GEAR_RATIO) * 360.0;
 
-            // 3. 计算绝对误差
-            double diffDegrees = Math.abs(leftCurrentDeg - rightCurrentDeg);
+    //         // 3. 计算绝对误差
+    //         double diffDegrees = Math.abs(leftCurrentDeg - rightCurrentDeg);
 
-            // 4. 逻辑判断
-            if (diffDegrees > SYNC_TOLERANCE_DEGREES) {
-                // --- 误差过大，执行修复序列 ---
-                // 计算当前两边的平均角度
-                double averageDeg = (leftCurrentDeg + rightCurrentDeg) / 2.0;
+    //         // 4. 逻辑判断
+    //         if (diffDegrees > SYNC_TOLERANCE_DEGREES) {
+    //             // --- 误差过大，执行修复序列 ---
+    //             // 计算当前两边的平均角度
+    //             double averageDeg = (leftCurrentDeg + rightCurrentDeg) / 2.0;
 
-                return Commands.sequence(
-                    // 步骤 A：发送指令让两边先走向平均位置
-                    this.runOnce(() -> setDeployAngle(averageDeg)),
+    //             return Commands.sequence(
+    //                 // 步骤 A：发送指令让两边先走向平均位置
+    //                 this.runOnce(() -> setDeployAngle(averageDeg)),
                     
-                    // 步骤 B：等待，直到两边的位置差缩小到安全范围内
-                    Commands.waitUntil(() -> {
-                        double currentLeft = m_deployLeft.getPosition().getValueAsDouble();
-                        double currentRight = -m_deployRight.getPosition().getValueAsDouble();
-                        double currentDiff = Math.abs(currentLeft - currentRight);
+    //                 // 步骤 B：等待，直到两边的位置差缩小到安全范围内
+    //                 Commands.waitUntil(() -> {
+    //                     double currentLeft = m_deployLeft.getPosition().getValueAsDouble();
+    //                     double currentRight = -m_deployRight.getPosition().getValueAsDouble();
+    //                     double currentDiff = Math.abs(currentLeft - currentRight);
                         
-                        // 换算当前误差度数
-                        double currentDiffDeg = (currentDiff / GEAR_RATIO) * 360.0;
-                        return currentDiffDeg <= 1.0; // 同步到 1 度以内放行
-                    }).withTimeout(0.5), // 【关键保护】最多等 0.5 秒。如果机构卡死，不能让它无限等下去
+    //                     // 换算当前误差度数
+    //                     double currentDiffDeg = (currentDiff / GEAR_RATIO) * 360.0;
+    //                     return currentDiffDeg <= 1.0; // 同步到 1 度以内放行
+    //                 }).withTimeout(0.5), // 【关键保护】最多等 0.5 秒。如果机构卡死，不能让它无限等下去
                     
-                    // 步骤 C：同步完成，继续前往真正的目标位置
-                    this.runOnce(() -> setDeployAngle(targetDegrees))
-                );
+    //                 // 步骤 C：同步完成，继续前往真正的目标位置
+    //                 this.runOnce(() -> setDeployAngle(targetDegrees))
+    //             );
 
-            } else {
-                // --- 误差在安全范围内，直接前往目标位置 ---
-                return this.runOnce(() -> setDeployAngle(targetDegrees));
-            }
-        });
-    }
+    //         } else {
+    //             // --- 误差在安全范围内，直接前往目标位置 ---
+    //             return this.runOnce(() -> setDeployAngle(targetDegrees));
+    //         }
+    //     });
+    // }
 
     // 动作 1：一键伸出到指定角度（比如 90度）
-    public Command deployToAngleCommand() {
-        return Commands.startEnd(
-            () -> setDeployAngle(TARGET_DEPLOY_ANGLE_DEGREES),
-            () -> setDeployAngle(0.0),
-            this
-            );
-    }
+    // public Command deployToAngleCommand() {
+    //     return Commands.startEnd(
+    //         () -> setDeployAngle(TARGET_DEPLOY_ANGLE_DEGREES),
+    //         () -> setDeployAngle(0.0),
+    //         this
+    //         );
+    // }
 
     // 动作 2：一键收回（回到 0度）
-    public Command retractToAngleCommand() {
-        return this.runOnce(() -> setDeployAngle(0.0));
-    }
+    // public Command retractToAngleCommand() {
+    //     return this.runOnce(() -> setDeployAngle(0.0));
+    // }
 
     public Command runIntakeCommand() {
         return this.runEnd(() -> setRollerSpeed(INTAKE_SPEED),

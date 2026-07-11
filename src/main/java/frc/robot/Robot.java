@@ -82,6 +82,7 @@ public class Robot extends TimedRobot
   public void disabledInit()
   {
     m_robotContainer.setMotorBrake(true);
+    m_robotContainer.resetShooterSystems();
     disabledTimer.reset();
     disabledTimer.start();
   }
@@ -135,6 +136,8 @@ public class Robot extends TimedRobot
     {
       CommandScheduler.getInstance().cancelAll();
     }
+
+    m_robotContainer.resetShooterSystems();
   }
 
   /**

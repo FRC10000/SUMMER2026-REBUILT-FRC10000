@@ -14,7 +14,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import frc.robot.subsystems.LimelightVisionSubsystem;
 
 import java.io.File;
 import java.util.function.Supplier;
@@ -29,7 +28,6 @@ public class SwerveSubsystem extends SubsystemBase {
 
   private final SwerveDrive swerveDrive;
   private final boolean visionDriveTest = Constants.OperatorConstants.VISION_DRIVE_ENABLED;
-  private LimelightVisionSubsystem vision;
 
   public SwerveSubsystem(File directory) {
     SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
@@ -44,19 +42,7 @@ public class SwerveSubsystem extends SubsystemBase {
     swerveDrive.setAngularVelocityCompensation(true, true, 0.1); 
     swerveDrive.setModuleEncoderAutoSynchronize(false, 1); 
 
-    if (visionDriveTest) {
-      setupLimelightVision();
-      swerveDrive.stopOdometryThread();
-    }
     setupPathPlanner();
-  }
-
-  public void setupLimelightVision() {
-    vision = new LimelightVisionSubsystem(swerveDrive);
-  }
-
-  public LimelightVisionSubsystem getVision() {
-    return vision;
   }
 
   @Override
@@ -121,29 +107,6 @@ public class SwerveSubsystem extends SubsystemBase {
     return run(() -> swerveDrive.driveFieldOriented(velocity.get()));
   }
 
-  /**
-   * Drive with manual translation but vision-controlled rotation.
-   * Used during aiming: left stick translates, Limelight tx controls chassis rotation.
-   *
-   * @param translationSupplier Supplier of ChassisSpeeds (usually your SwerveInputStream).
-   * @param vision              The LimelightVisionSubsystem to read target offset from.
-   * @return A Command that drives translation from sticks but rotation from vision.
-   */
-  public Command driveFieldOrientedAiming(Supplier<ChassisSpeeds> translationSupplier,
-                                          LimelightVisionSubsystem vision) {
-    return run(() -> {
-      ChassisSpeeds speeds = translationSupplier.get();
-      if (vision.hasTarget()) {
-        // Override rotation with vision P-loop
-        speeds = new ChassisSpeeds(
-            speeds.vxMetersPerSecond,
-            speeds.vyMetersPerSecond,
-            -vision.getTargetTx() * Constants.OperatorConstants.AIM_P_GAIN
-        );
-      }
-      swerveDrive.driveFieldOriented(speeds);
-    });
-  }
 
   public void resetOdometry(Pose2d initialHolonomicPose) {
     swerveDrive.resetOdometry(initialHolonomicPose);

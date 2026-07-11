@@ -11,7 +11,7 @@ import frc.robot.Constants.TurretConstants;
 
 public class TurretSubsystem extends SubsystemBase {
     
-    private final TalonFX m_turretMotor = new TalonFX(TurretConstants.TURRET_ID);
+    private final TalonFX m_turretMotor = new TalonFX(TurretConstants.TURRET_ID, "canivore");
     
     private final MotionMagicVoltage m_positionRequest = new MotionMagicVoltage(0).withSlot(0);
 
@@ -25,14 +25,23 @@ public class TurretSubsystem extends SubsystemBase {
         config.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
         config.SoftwareLimitSwitch.ReverseSoftLimitThreshold = TurretConstants.MIN_ROTATIONS;
 
-        config.Slot0.kP = 4.0;
+        // 【修改1：大幅提高 kP，并加入 kS 和 kD】
+        // 对于 Voltage 控制，kP 推荐在 40.0 到 100.0 之间起步测试
+        config.Slot0.kP = 60.0; // 每偏差 1 圈，输出 60V (由于被电瓶 12V 截断，相当于偏差 0.2 圈就能给满 12V)
         config.Slot0.kI = 0.0;
-        config.Slot0.kD = 0.1;
+        config.Slot0.kD = 5.0;  // 增加 kD 防止目标位置震荡
         
-        // Smoother motion profile
-        config.MotionMagic.MotionMagicCruiseVelocity = 0.5;
-        config.MotionMagic.MotionMagicAcceleration = 0.5;
-        config.MotionMagic.MotionMagicJerk = 5.0;
+        // kS 是克服静态摩擦力的基础电压。如果你的炮塔很重，可以给 0.2V ~ 0.5V，它会在电机启动瞬间推一把。
+        config.Slot0.kS = 0.25; 
+        
+        // kV 是速度前馈，Motion Magic 必备。你可以先给个基础值，或后续用 SysId 测算
+        config.Slot0.kV = 2.0;
+
+        // 【修改2：加快你的 Motion Magic 加速度】
+        // 之前 0.5 的加速度意味着要花整整 1 秒钟才能达到 180度/秒 的速度，太肉了。
+        config.MotionMagic.MotionMagicCruiseVelocity = 1.0; // 巡航速度：每秒 1 圈 (360度/秒)
+        config.MotionMagic.MotionMagicAcceleration = 2.0;   // 加速度：每秒 2 圈 (0.5秒达到最高速)
+        config.MotionMagic.MotionMagicJerk = 0.0;           // 先把 Jerk 设为 0 测试，调顺了再加
 
         m_turretMotor.getConfigurator().apply(config);
         
