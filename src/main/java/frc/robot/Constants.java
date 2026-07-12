@@ -46,7 +46,7 @@ public final class Constants
     public static final double DEADBAND        = 0.2;
 
     // Set to false to disable drivetrain (for subsystem testing)
-    public static final boolean DRIVE_ENABLED  = false;
+    public static final boolean DRIVE_ENABLED  = true;
 
     // Vision alignment
     public static final boolean VISION_DRIVE_ENABLED = false; // Disable Limelight for manual testing

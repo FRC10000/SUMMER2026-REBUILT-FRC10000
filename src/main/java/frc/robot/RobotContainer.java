@@ -116,7 +116,6 @@ public class RobotContainer {
     // 原来的 X 键 shoot 测试可以保留或注释
     driverXbox.x().whileTrue(feeder.shootCommand());
     driverXbox.leftTrigger().whileTrue(intake.acquireFuelCommand(() -> false));
-
     // --- AUTOAIM TEST ---
     driverXbox.rightTrigger().whileTrue(new AutoAimCommand(drivebase, turret, pivot));
   }
