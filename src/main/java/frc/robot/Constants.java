@@ -79,30 +79,22 @@ public final class Constants
   }
 
   public static final class VisionConstants {
-      // Limelight Names (must match NetworkTables names in Limelight UI)
-      public static final String BACK_LIMELIGHT = "limelight-back";  // For odometry
-      public static final String FRONT_LIMELIGHT = "limelight-front"; // For targeting (on turret)
+      // Limelight Names
+      public static final String BACK_LIMELIGHT = "limelight-back";  // On turret, for AprilTag targeting
       
-      // Back Limelight (odometry) physical mount
-      public static final double BACK_CAM_HEIGHT_METERS = 0.0;   // TODO: measure height from floor
-      public static final double BACK_CAM_MOUNT_ANGLE_DEG = 0.0; // TODO: measure tilt from horizontal
-
-      // Front Limelight (turret targeting) physical mount
-      public static final double FRONT_CAM_HEIGHT_METERS = 0.0;   // TODO: measure height from floor
-      public static final double FRONT_CAM_MOUNT_ANGLE_DEG = 0.0; // TODO: measure tilt from horizontal
-
-      // AprilTag target height (center of tag, 2025 Reefscape)
-      public static final double TARGET_HEIGHT_METERS = 0.0; // TODO: measure
-
-      // Turret-to-Camera transform (front Limelight on turret)
-      public static final double TURRET_CAM_X = 0.0;  // meters forward from turret pivot
-      public static final double TURRET_CAM_Y = 0.0;  // meters left of turret pivot
-      public static final double TURRET_CAM_Z = 0.2;  // meters up from turret pivot
-      public static final double TURRET_CAM_PITCH = 15.0; // degrees tilt up from horizontal
+      // Camera physical mount (on turret)
+      public static final double CAM_HEIGHT_METERS = 0.52;   // Camera lens height from floor
+      public static final double CAM_MOUNT_ANGLE_DEG = 18.0; // Camera tilt upward from horizontal
       
-      // Vision standard deviations for pose estimation
-      public static final double[] SINGLE_TAG_STD_DEV = {4.0, 4.0, 8.0};
-      public static final double[] MULTI_TAG_STD_DEV = {0.5, 0.5, 1.0};
+      // AprilTag target height (center of tag on Reef, 2026 Reefscape)
+      public static final double TARGET_HEIGHT_METERS = 1.14; // Tag center height
+      public static final double HEIGHT_DIFF_METERS = TARGET_HEIGHT_METERS - CAM_HEIGHT_METERS; // 0.62m
+      
+      // Target AprilTag IDs (Reef tags)
+      public static final int[] TARGET_TAG_IDS = {2, 9, 10, 11};
+      
+      // Turret PID for txnc tracking
+      public static final double TURRET_KP = 0.5; // Proportional gain for txnc correction (tune on robot)
   }
 
   public static final class FeederConstants {
@@ -117,7 +109,7 @@ public final class Constants
 
       // Idle state: slowly rotating inversely when not shooting
       public static final double kIdleFeederSpeed = -0.15;
-      public static final double kIdleWheelSpeed = -0.15;
+      public static final double kIdleWheelSpeed = -0.05;
 
       // Shooting state
       public static final double kShootFeederSpeed = 0.6;
@@ -125,12 +117,13 @@ public final class Constants
   }
 
   public static final class ShooterLookupConstants {
-      // Distance (meters) -> Pivot Angle (degrees) lookup
-      public static final double[] DISTANCE_TO_PIVOT_DISTANCE = {1.0, 2.0, 3.0, 4.0, 5.0};
-      public static final double[] DISTANCE_TO_PIVOT_ANGLE = {10.0, 20.0, 30.0, 40.0, 50.0};
+      // Horizontal distance (meters) -> Pivot Angle (degrees) lookup
+      // These are initial placeholders - TUNE ON ROBOT
+      public static final double[] DISTANCE_TO_PIVOT_DISTANCE = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0};
+      public static final double[] DISTANCE_TO_PIVOT_ANGLE =   {2.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0};
       
-      // Distance (meters) -> Flywheel RPM lookup
-      public static final double[] DISTANCE_TO_RPM_DISTANCE = {1.0, 2.0, 3.0, 4.0, 5.0};
-      public static final double[] DISTANCE_TO_RPM_RPM = {2000.0, 2500.0, 3000.0, 3500.0, 4000.0};
+      // Horizontal distance (meters) -> Flywheel RPM lookup (for future use)
+      public static final double[] DISTANCE_TO_RPM_DISTANCE = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0};
+      public static final double[] DISTANCE_TO_RPM_RPM = {1500.0, 1800.0, 2200.0, 2600.0, 3000.0, 3400.0, 3800.0};
   }
 }

@@ -65,6 +65,22 @@ public class FeederSubsystem extends SubsystemBase {
     );
   }
 
+  public void shootFeederWheel() {
+        runWheel(FeederConstants.kShootWheelSpeed); 
+  }
+
+    // 只让大轮转
+    public void shootFeeder() {
+        run(FeederConstants.kShootFeederSpeed); 
+    }
+
+    // 待机状态（比如两个轮子都微弱反转，或者大轮停、小轮微弱反转防卡球）
+    public void idleMod() {
+        run(FeederConstants.kIdleFeederSpeed);
+        runWheel(FeederConstants.kIdleWheelSpeed);
+    }
+
+
   /** Shooting: wheel at 80%, feeder at 60%. */
   public Command shootCommand() {
       return Commands.sequence(

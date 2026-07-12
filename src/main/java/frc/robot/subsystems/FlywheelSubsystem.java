@@ -50,6 +50,23 @@ public class FlywheelSubsystem extends SubsystemBase {
         double targetRPS = targetRPM / 60.0;
         m_frontRight.setControl(m_velocityRequest.withVelocity(targetRPS));
     }
+    
+    public double getCurrentRPM() {
+        // 1. 获取电机当前速度 (RPS - 每秒圈数)
+        // 注意：如果你使用了内部减速比配置 (SensorToMechanismRatio)，
+        // getVelocity() 返回的直接就是机构输出轴的 RPS。
+        double currentRPS = m_frontRight.getVelocity().getValueAsDouble();
+        
+        // 2. 将 RPS 转换为 RPM (乘以 60)
+        return currentRPS * 60.0; 
+    }
+
+    /**
+     * (可选) 检查飞轮是否已经达到目标转速
+     */
+    public boolean isAtTargetRPM(double targetRPM, double toleranceRPM) {
+        return Math.abs(getCurrentRPM() - targetRPM) <= toleranceRPM;
+    }
 
     public void stop() {
         m_frontRight.setControl(m_velocityRequest.withVelocity(0));
