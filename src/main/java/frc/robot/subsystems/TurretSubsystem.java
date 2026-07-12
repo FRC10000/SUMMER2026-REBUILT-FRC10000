@@ -10,10 +10,13 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.TurretConstants;
 
 public class TurretSubsystem extends SubsystemBase {
-    
+
     private final TalonFX m_turretMotor = new TalonFX(TurretConstants.TURRET_ID, "canivore");
-    
+
     private final MotionMagicVoltage m_positionRequest = new MotionMagicVoltage(0).withSlot(0);
+
+    private int m_periodicCount = 0;
+    private static final int SMARTDASHBOARD_INTERVAL = 5; // every 5 cycles = 100ms
 
     public TurretSubsystem() {
         TalonFXConfiguration config = new TalonFXConfiguration();
@@ -60,7 +63,10 @@ public class TurretSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        SmartDashboard.putNumber("Turret/Current Angle", getCurrentAngle());
+        if (++m_periodicCount >= SMARTDASHBOARD_INTERVAL) {
+            m_periodicCount = 0;
+            SmartDashboard.putNumber("Turret/Current Angle", getCurrentAngle());
+        }
     }
 
 }

@@ -24,6 +24,9 @@ public class AutoAimCommand extends Command {
     private final TurretSubsystem m_turret;
     private final PivotSubsystem m_pivot;
 
+    private int m_execCount = 0;
+    private RawFiducial[] m_cachedFiducials = new RawFiducial[0];
+
     public AutoAimCommand(SwerveSubsystem drive, TurretSubsystem turret, PivotSubsystem pivot) {
         m_drivebase = drive;
         m_turret = turret;
@@ -33,11 +36,14 @@ public class AutoAimCommand extends Command {
 
     @Override
     public void execute() {
-        // 1. 获取所有检测到的 AprilTag
-        RawFiducial[] fiducials = LimelightHelpers.getRawFiducials(LIMELIGHT_NAME);
+        // 1. 获取所有检测到的 AprilTag (每3周期读一次，约60ms)
+        if (++m_execCount >= 3) {
+            m_execCount = 0;
+            m_cachedFiducials = LimelightHelpers.getRawFiducials(LIMELIGHT_NAME);
+        }
 
         // 2. 过滤目标 ID，选最近的
-        RawFiducial bestTarget = findNearestTarget(fiducials);
+        RawFiducial bestTarget = findNearestTarget(m_cachedFiducials);
         if (bestTarget == null) {
             // 没看到目标 tag，保持当前位置不动
             return;

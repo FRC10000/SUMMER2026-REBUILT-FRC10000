@@ -10,7 +10,6 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -28,11 +27,9 @@ import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
 public class SwerveSubsystem extends SubsystemBase {
 
   private final SwerveDrive swerveDrive;
-  // 1. 在 SwerveSubsystem 类头部声明一个成员变量
-  private final edu.wpi.first.wpilibj.smartdashboard.Field2d m_field = new edu.wpi.first.wpilibj.smartdashboard.Field2d();
 
   public SwerveSubsystem(File directory) {
-    SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
+    SwerveDriveTelemetry.verbosity = TelemetryVerbosity.NONE;
     try {
       swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED, new Pose2d());
     } catch (Exception e) {
@@ -47,13 +44,11 @@ public class SwerveSubsystem extends SubsystemBase {
     setupPathPlanner();
 
     // 2. 在 SwerveSubsystem 的构造函数最后，把部件推送到 SmartDashboard
-    SmartDashboard.putData("Field", m_field);
   }
 
   @Override
   public void periodic() {
     swerveDrive.updateOdometry();
-    m_field.setRobotPose(swerveDrive.getPose());
   }
 
   public void setupPathPlanner() {

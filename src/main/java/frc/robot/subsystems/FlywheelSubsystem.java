@@ -20,6 +20,9 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     private final VelocityVoltage m_velocityRequest = new VelocityVoltage(0).withSlot(0);
 
+    private int m_periodicCount = 0;
+    private static final int SMARTDASHBOARD_INTERVAL = 5; // every 5 cycles = 100ms
+
     public FlywheelSubsystem() {
         TalonFXConfiguration config = new TalonFXConfiguration();
 
@@ -74,7 +77,10 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        SmartDashboard.putNumber("Shooter/Target RPM", m_velocityRequest.Velocity * 60.0);
-        SmartDashboard.putNumber("Shooter/Actual RPM", m_frontRight.getVelocity().getValueAsDouble() * 60.0);
+        if (++m_periodicCount >= SMARTDASHBOARD_INTERVAL) {
+            m_periodicCount = 0;
+            SmartDashboard.putNumber("Shooter/Target RPM", m_velocityRequest.Velocity * 60.0);
+            SmartDashboard.putNumber("Shooter/Actual RPM", m_frontRight.getVelocity().getValueAsDouble() * 60.0);
+        }
     }
 }

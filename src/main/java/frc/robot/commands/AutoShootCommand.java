@@ -27,6 +27,9 @@ public class AutoShootCommand extends Command {
     private static final double FLYWHEEL_TOLERANCE_RPM = 100.0;
     private final Timer shootTimer = new Timer();
 
+    private int m_execCount = 0;
+    private RawFiducial[] m_cachedFiducials = new RawFiducial[0];
+
     public AutoShootCommand(SwerveSubsystem drive, FlywheelSubsystem flywheel, FeederSubsystem feeder) {
         m_drivebase = drive;
         m_flywheel = flywheel;
@@ -42,14 +45,17 @@ public class AutoShootCommand extends Command {
 
     @Override
     public void execute() {
-        // 1. 获取检测到的 AprilTag
-        RawFiducial[] fiducials = LimelightHelpers.getRawFiducials(LIMELIGHT_NAME);
-        RawFiducial bestTarget = findNearestTarget(fiducials);
+        // 1. 获取检测到的 AprilTag (每3周期读一次，约60ms)
+        if (++m_execCount >= 3) {
+            m_execCount = 0;
+            m_cachedFiducials = LimelightHelpers.getRawFiducials(LIMELIGHT_NAME);
+        }
+        RawFiducial bestTarget = findNearestTarget(m_cachedFiducials);
 
         if (bestTarget == null) {
             // 找不到目标时保持基础怠速，停止所有供弹轮
-            m_flywheel.setTargetRPM(1500); 
-            m_feeder.idle(); 
+            m_flywheel.setTargetRPM(1500);
+            m_feeder.idleMod();
             shootTimer.stop();
             shootTimer.reset();
             return;
@@ -85,7 +91,7 @@ public class AutoShootCommand extends Command {
             // 【条件不满足】转速掉落或者还在提速，重置计时器并待机
             shootTimer.stop();
             shootTimer.reset();
-            m_feeder.idle();
+            m_feeder.idleMod();
         }
     }
 
@@ -94,7 +100,7 @@ public class AutoShootCommand extends Command {
         shootTimer.stop();
         shootTimer.reset();
         m_flywheel.stop();
-        m_feeder.idle(); // 自动回退到默认慢反转或停止状态
+        m_feeder.idleMod(); // 自动回退到默认慢反转或停止状态
     }
 
     // ================= 辅助方法 (保持不变) =================

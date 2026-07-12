@@ -126,8 +126,6 @@ public class IntakeSubsystem extends SubsystemBase {
             
             Commands.runOnce(() -> System.out.println("Step 3: Starting Roller...")),
             this.run(() -> {
-                // 这里加个 log 看看是否每 20ms 都在触发
-                System.out.println("Roller is spinning!");
                 setRollerSpeed(reverse.getAsBoolean() ? -INTAKE_SPEED : INTAKE_SPEED);
             })
         ).finallyDo((interrupted) -> {

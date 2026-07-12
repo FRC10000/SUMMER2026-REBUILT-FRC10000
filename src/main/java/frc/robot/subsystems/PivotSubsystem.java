@@ -22,6 +22,9 @@ public class PivotSubsystem extends SubsystemBase {
     private final SparkClosedLoopController m_pidController = m_pivotMotor.getClosedLoopController();
     private final SparkMaxConfig m_config = new SparkMaxConfig();
 
+    private int m_periodicCount = 0;
+    private static final int SMARTDASHBOARD_INTERVAL = 5; // every 5 cycles = 100ms
+
     public PivotSubsystem() {
         m_config.idleMode(IdleMode.kBrake);
         m_config.smartCurrentLimit(20);
@@ -52,6 +55,9 @@ public class PivotSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        SmartDashboard.putNumber("Pivot/Current Angle", getCurrentAngle());
+        if (++m_periodicCount >= SMARTDASHBOARD_INTERVAL) {
+            m_periodicCount = 0;
+            SmartDashboard.putNumber("Pivot/Current Angle", getCurrentAngle());
+        }
     }
 }
