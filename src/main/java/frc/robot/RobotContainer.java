@@ -53,7 +53,7 @@ public class RobotContainer {
   public RobotContainer() {
     
     // 【需求1】让 Feeder 默认处于闲置反转状态
-    feeder.setDefaultCommand(feeder.idleCommand());
+    // feeder.setDefaultCommand(feeder.idleCommand());
 
     configureBindings();
 
@@ -115,7 +115,7 @@ public class RobotContainer {
 
     // 原来的 X 键 shoot 测试可以保留或注释
     driverXbox.x().whileTrue(feeder.shootCommand());
-    driverXbox.leftTrigger().whileTrue(intake.acquireFuelCommand(() -> false));
+    driverXbox.leftTrigger().whileTrue(intake.runIntakeCommand());
     // --- AUTOAIM TEST ---
     driverXbox.rightTrigger().whileTrue(new AutoAimCommand(drivebase, turret, pivot));
   }

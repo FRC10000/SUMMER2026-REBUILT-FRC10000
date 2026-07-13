@@ -24,11 +24,12 @@ public class AutoShootCommand extends Command {
     private final FlywheelSubsystem m_flywheel;
     private final FeederSubsystem m_feeder;
 
-    private static final double FLYWHEEL_TOLERANCE_RPM = 100.0;
+    private static final double FLYWHEEL_TOLERANCE_RPM = 200.0;
     private final Timer shootTimer = new Timer();
 
     private int m_execCount = 0;
     private RawFiducial[] m_cachedFiducials = new RawFiducial[0];
+        private boolean m_isShooting = false; // 新增：发射状态锁
 
     public AutoShootCommand(SwerveSubsystem drive, FlywheelSubsystem flywheel, FeederSubsystem feeder) {
         m_drivebase = drive;
@@ -41,19 +42,19 @@ public class AutoShootCommand extends Command {
     public void initialize() {
         shootTimer.stop();
         shootTimer.reset();
+        m_isShooting = false; // 初始化重置
     }
 
     @Override
     public void execute() {
-        // 1. 获取检测到的 AprilTag (每3周期读一次，约60ms)
+        // 1. 获取检测到的 AprilTag (每3周期读一次)
         if (++m_execCount >= 3) {
             m_execCount = 0;
             m_cachedFiducials = LimelightHelpers.getRawFiducials(LIMELIGHT_NAME);
         }
         RawFiducial bestTarget = findNearestTarget(m_cachedFiducials);
 
-        if (bestTarget == null) {
-            // 找不到目标时保持基础怠速，停止所有供弹轮
+        if (bestTarget == null && !m_isShooting) { // 如果没目标且当前不在射击流中，才待机
             m_flywheel.setTargetRPM(1500);
             m_feeder.idleMod();
             shootTimer.stop();
@@ -61,34 +62,35 @@ public class AutoShootCommand extends Command {
             return;
         }
 
-        // 2. 距离计算与飞轮转速查表
-        double horizontalDistance = computeHorizontalDistance(bestTarget.tync);
-        double targetFlywheelRpm = 0.0;
-
-        if (horizontalDistance > 0) {
-            targetFlywheelRpm = lookupFlywheelRPM(horizontalDistance);
-            m_flywheel.setTargetRPM(targetFlywheelRpm);
+        // 2. 距离计算与飞轮转速查表（如果在射击中，保持上一刻的转速设定，避免查表乱跳）
+        double targetFlywheelRpm = 1500;
+        if (bestTarget != null) {
+            double horizontalDistance = computeHorizontalDistance(bestTarget.tync);
+            if (horizontalDistance > 0) {
+                targetFlywheelRpm = lookupFlywheelRPM(horizontalDistance);
+                m_flywheel.setTargetRPM(targetFlywheelRpm);
+            }
         }
 
-        // 3. 核心：检查飞轮转速是否达标
+        // 3. 核心修改：检查飞轮是否准备就绪，或者已经处于射击序列中
         boolean flywheelReady = Math.abs(m_flywheel.getCurrentRPM() - targetFlywheelRpm) <= FLYWHEEL_TOLERANCE_RPM;
 
-        if (flywheelReady) {
-            // 【条件满足】启动启动发射计时逻辑
-            if (shootTimer.get() == 0.0) {
+        // 只要准备好了，或者一旦开启了射击流，就无视掉速，一条路走到黑
+        if (flywheelReady || m_isShooting) {
+            if (!m_isShooting) {
+                m_isShooting = true; // 锁定状态，一旦触发绝不回头
                 shootTimer.start();
             }
 
-            // 步骤 A：小轮（供弹）立刻正转
+            // 步骤 A：小轮立刻正转
             m_feeder.shootFeederWheel();
 
-            // 步骤 B：当小轮转过 0.3 秒后，大轮立刻加入
+            // 步骤 B：当小轮转过 0.3 秒后，大轮加入
             if (shootTimer.get() >= 0.3) {
-                // 这里的 runWheel 对应你原 feeder 里 kShootWheelSpeed 的大轮控制方法
                 m_feeder.shootFeeder();
             }
         } else {
-            // 【条件不满足】转速掉落或者还在提速，重置计时器并待机
+            // 只有在既没准备好，又没开始射击的情况下，才处于待机状态
             shootTimer.stop();
             shootTimer.reset();
             m_feeder.idleMod();
@@ -100,21 +102,29 @@ public class AutoShootCommand extends Command {
         shootTimer.stop();
         shootTimer.reset();
         m_flywheel.stop();
-        m_feeder.idleMod(); // 自动回退到默认慢反转或停止状态
+        m_feeder.idleMod();
+        m_isShooting = false; 
     }
 
     // ================= 辅助方法 (保持不变) =================
 
     private RawFiducial findNearestTarget(RawFiducial[] fiducials) {
         if (fiducials == null || fiducials.length == 0) return null;
+
+        int primaryId = (int) LimelightHelpers.getFiducialID(LIMELIGHT_NAME);
+
+        // 先匹配 Limelight 的 primary 目标
+        for (RawFiducial f : fiducials) {
+            if (f.id == primaryId && isTargetTag(f.id)) {
+                return f;
+            }
+        }
+
+        // 按距离兜底
         RawFiducial nearest = null;
         double minDist = Double.MAX_VALUE;
         for (RawFiducial f : fiducials) {
-            boolean isTarget = false;
-            for (int id : VisionConstants.TARGET_TAG_IDS) {
-                if (f.id == id) { isTarget = true; break; }
-            }
-            if (!isTarget) continue;
+            if (!isTargetTag(f.id)) continue;
             if (f.distToRobot < minDist) {
                 minDist = f.distToRobot;
                 nearest = f;
@@ -123,9 +133,17 @@ public class AutoShootCommand extends Command {
         return nearest;
     }
 
+    private boolean isTargetTag(int id) {
+        for (int tid : VisionConstants.TARGET_TAG_IDS) {
+            if (id == tid) return true;
+        }
+        return false;
+    }
+
     private double computeHorizontalDistance(double tync) {
-        double angleRad = Math.toRadians(Math.abs(tync));
-        if (angleRad < 0.01) return 5.0; 
+        double angleFromHoriz = VisionConstants.CAM_MOUNT_ANGLE_DEG + tync;
+        double angleRad = Math.toRadians(angleFromHoriz);
+        if (angleRad < 0.01) return 5.0;
         return VisionConstants.HEIGHT_DIFF_METERS / Math.tan(angleRad);
     }
 

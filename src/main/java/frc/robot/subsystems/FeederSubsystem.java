@@ -17,6 +17,8 @@ public class FeederSubsystem extends SubsystemBase {
   private final TalonFX m_feederMotor = new TalonFX(FeederConstants.kFeederMotorCanId, "canivore");
   private final TalonFX m_feederWheelMotor = new TalonFX(FeederConstants.kFeederWheelMotorCanId, "canivore");
   private final TalonFX m_feederWheelFollower = new TalonFX(FeederConstants.kFeederWheelFollowerCanId, "canivore");
+  private int m_idleCounter = 0;
+  private static final int IDLE_INTERVAL = 2; // Write every 2nd cycle (40ms)
 
   public FeederSubsystem() {
     TalonFXConfiguration feederConfig = new TalonFXConfiguration();
@@ -57,8 +59,11 @@ public class FeederSubsystem extends SubsystemBase {
   public Command idleCommand() {
     return Commands.runEnd(
         () -> {
-          run(FeederConstants.kIdleFeederSpeed);
-          runWheel(FeederConstants.kIdleWheelSpeed);
+          if (++m_idleCounter >= IDLE_INTERVAL) {
+            m_idleCounter = 0;
+            run(FeederConstants.kIdleFeederSpeed);
+            runWheel(FeederConstants.kIdleWheelSpeed);
+          }
         },
         () -> stop(),
         this

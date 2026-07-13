@@ -83,8 +83,8 @@ public final class Constants
       public static final String BACK_LIMELIGHT = "limelight-back";  // On turret, for AprilTag targeting
       
       // Camera physical mount (on turret)
-      public static final double CAM_HEIGHT_METERS = 0.52;   // Camera lens height from floor
-      public static final double CAM_MOUNT_ANGLE_DEG = 18.0; // Camera tilt upward from horizontal
+      public static final double CAM_HEIGHT_METERS = 0.54;   // Camera lens height from floor 0.52
+      public static final double CAM_MOUNT_ANGLE_DEG = 29.3; // Camera tilt upward from horizontal (calibrated)
       
       // AprilTag target height (center of tag on Reef, 2026 Reefscape)
       public static final double TARGET_HEIGHT_METERS = 1.14; // Tag center height
@@ -113,17 +113,17 @@ public final class Constants
 
       // Shooting state
       public static final double kShootFeederSpeed = 0.6;
-      public static final double kShootWheelSpeed = 0.7;
+      public static final double kShootWheelSpeed = 0.5;
   }
 
   public static final class ShooterLookupConstants {
       // Horizontal distance (meters) -> Pivot Angle (degrees) lookup
       // These are initial placeholders - TUNE ON ROBOT
       public static final double[] DISTANCE_TO_PIVOT_DISTANCE = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0};
-      public static final double[] DISTANCE_TO_PIVOT_ANGLE =   {2.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0};
+      public static final double[] DISTANCE_TO_PIVOT_ANGLE =   {10, 15, 20, 25, 30, 35, 35};
       
       // Horizontal distance (meters) -> Flywheel RPM lookup (for future use)
       public static final double[] DISTANCE_TO_RPM_DISTANCE = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0};
-      public static final double[] DISTANCE_TO_RPM_RPM = {1500.0, 1800.0, 2200.0, 2600.0, 3000.0, 3400.0, 3800.0};
+      public static final double[] DISTANCE_TO_RPM_RPM = {1700.0, 2200.0, 2600.0, 3000.0, 3400.0, 3800.0, 4400};
   }
 }

@@ -27,6 +27,8 @@ import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
 public class SwerveSubsystem extends SubsystemBase {
 
   private final SwerveDrive swerveDrive;
+  private int m_odometryCounter = 0;
+  private static final int ODOMETRY_INTERVAL = 2; // Update every 2nd cycle (40ms)
 
   public SwerveSubsystem(File directory) {
     SwerveDriveTelemetry.verbosity = TelemetryVerbosity.NONE;
@@ -48,7 +50,10 @@ public class SwerveSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    swerveDrive.updateOdometry();
+    if (++m_odometryCounter >= ODOMETRY_INTERVAL) {
+      m_odometryCounter = 0;
+      swerveDrive.updateOdometry();
+    }
   }
 
   public void setupPathPlanner() {
