@@ -1,5 +1,8 @@
 package frc.robot.util;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import frc.robot.Constants.ShooterLookupConstants;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.util.LimelightHelpers.RawFiducial;
@@ -97,5 +100,42 @@ public final class VisionUtil {
             }
         }
         return rpms[0];
+    }
+
+    /**
+     * Compute field-relative angle from robot to a target using odometry.
+     *
+     * @param robotPose  Current robot pose from swerve odometry
+     * @param targetPos  Field coordinates of the target (e.g., alliance hub)
+     * @return Field-relative angle (radians, CCW+) from robot to target
+     */
+    public static double computeOdometryAngleToTarget(Pose2d robotPose, Translation2d targetPos) {
+        Translation2d robotToTarget = targetPos.minus(robotPose.getTranslation());
+        return robotToTarget.getAngle().getRadians();
+    }
+
+    /**
+     * Convert field-relative target angle to turret encoder angle.
+     *
+     * Coordinate math (WPILib CCW+):
+     *   1. fieldAngle: 0° = +x (forward), 90° = +y (left)
+     *   2. robotHeading: 0° = facing +x
+     *   3. robotRelative = fieldAngle - robotHeading    (field → robot frame)
+     *   4. turretEncoder = robotRelative - π             (offset: encoder 0° = robot back)
+     *   5. Wrapped to [-π, π] via inputModulus
+     *
+     * @param fieldAngle    Target angle in field frame (radians, CCW+)
+     * @param robotHeading  Current robot heading (radians, CCW+)
+     * @return Turret encoder target angle (degrees, for TurretSubsystem.setTargetAngle)
+     */
+    public static double computeTurretAngle(double fieldAngle, double robotHeading) {
+        // Step 1: field-relative → robot-relative
+        double robotRelative = fieldAngle - robotHeading;
+        // Step 2: apply 180° offset (encoder 0° = back of robot)
+        double turretRadians = robotRelative - Math.PI;
+        // Step 3: wrap to [-π, π] — shortest path, no infinite winding
+        turretRadians = MathUtil.inputModulus(turretRadians, -Math.PI, Math.PI);
+        // Step 4: convert to degrees for TurretSubsystem
+        return Math.toDegrees(turretRadians);
     }
 }

@@ -1,5 +1,7 @@
 package frc.robot.commands;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -16,10 +18,10 @@ import frc.robot.util.VisionUtil;
 
 /**
  * Combined AutoAim + AutoShoot command:
- * - Turret + pivot vision alignment (from AutoAim)
- * - When aligned, flywheel spins up and feeder shoots (from AutoShoot)
+ * - Turret + pivot vision alignment using Limelight
+ * - When no limelight target: odometry fallback to alliance hub angle
+ * - When aligned, flywheel spins up and feeder shoots
  * - Alliance-aware tag filtering: Red {10,11} priority 10, Blue {26,27} priority 26
- * - If no target visible, stays still (does nothing)
  */
 public class AutoAimAndShootCommand extends Command {
 
@@ -68,23 +70,16 @@ public class AutoAimAndShootCommand extends Command {
         // 3. 找最佳目标
         RawFiducial bestTarget = VisionUtil.findNearestTarget(m_cachedFiducials, LIMELIGHT_NAME, targetIds);
 
-        // 4. 没目标且不在射击中 → 什么都不做 (原地不动)
-        if (bestTarget == null && !m_isShooting) {
-            return;
-        }
-
+        // 4. Aim: limelight vision or odometry fallback
         double targetFlywheelRpm = 1500;
 
         if (bestTarget != null) {
-            // === 瞄准逻辑 (from AutoAim) ===
-
-            // Turret 左右锁定
+            // === Limelight vision — turret + pivot alignment ===
             double currentTurretAngle = m_turret.getCurrentAngle();
             double turretCorrection = Math.abs(bestTarget.txnc) > 1.5
                 ? VisionConstants.TURRET_KP * bestTarget.txnc : 0;
             m_turret.setTargetAngle(currentTurretAngle + turretCorrection);
 
-            // Pivot 上下
             double horizontalDistance = VisionUtil.computeHorizontalDistance(bestTarget.tync);
             SmartDashboard.putNumber("AutoAimShoot/TagID", bestTarget.id);
             SmartDashboard.putNumber("AutoAimShoot/horizDist", horizontalDistance);
@@ -94,10 +89,19 @@ public class AutoAimAndShootCommand extends Command {
                 m_pivot.setTargetAngle(pivotAngle);
                 targetFlywheelRpm = VisionUtil.lookupFlywheelRPM(horizontalDistance);
             }
-
-            // === 射击逻辑 (from AutoShoot) ===
-            m_flywheel.setTargetRPM(targetFlywheelRpm);
+        } else if (!m_isShooting) {
+            // === Odometry fallback — compute angle to alliance hub ===
+            Pose2d robotPose = m_drivebase.getPose();
+            Translation2d hubPos = getHubPosition();
+            double fieldAngle = VisionUtil.computeOdometryAngleToTarget(robotPose, hubPos);
+            double robotHeading = m_drivebase.getHeading().getRadians();
+            double turretAngle = VisionUtil.computeTurretAngle(fieldAngle, robotHeading);
+            m_turret.setTargetAngle(turretAngle);
+            return; // no target → don't shoot
         }
+
+        // === Shoot logic ===
+        m_flywheel.setTargetRPM(targetFlywheelRpm);
 
         // 飞轮就绪或已在射击序列中
         boolean flywheelReady = Math.abs(m_flywheel.getCurrentRPM() - targetFlywheelRpm) <= FLYWHEEL_TOLERANCE_RPM;
@@ -138,5 +142,13 @@ public class AutoAimAndShootCommand extends Command {
             return VisionConstants.RED_TAG_IDS;
         }
         return VisionConstants.BLUE_TAG_IDS;
+    }
+
+    private Translation2d getHubPosition() {
+        var alliance = DriverStation.getAlliance();
+        if (alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red) {
+            return VisionConstants.HUB_POSITION_RED;
+        }
+        return VisionConstants.HUB_POSITION_BLUE;
     }
 }

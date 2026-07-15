@@ -22,6 +22,7 @@ import frc.robot.subsystems.FlywheelSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.PivotSubsystem;
+import frc.robot.subsystems.PhotonVisionSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.swervedrive.SwerveSubsystem;
 import java.io.File;
@@ -38,6 +39,7 @@ public class RobotContainer {
   private final TurretSubsystem turret = new TurretSubsystem();
   private final PivotSubsystem pivot = new PivotSubsystem();
   private final FeederSubsystem feeder = new FeederSubsystem();
+  private final PhotonVisionSubsystem photonVision = new PhotonVisionSubsystem(drivebase);
   
   private double pivotTestAngle = 0.0;
   private double turretTestAngle = 0.0;
@@ -114,6 +116,11 @@ public class RobotContainer {
     // --- Right Bumper：PassShoot (turret补偿车身朝向 + 射击) ---
     driverXbox.rightBumper().whileTrue(
         new PassShootCommand(drivebase, turret, flywheel, pivot, feeder)
+    );
+
+    // --- Left Trigger：AutoAim with odometry fallback ---
+    driverXbox.leftTrigger().whileTrue(
+        new AutoAimAndShootCommand(drivebase, turret, pivot, flywheel, feeder)
     );
   }
 

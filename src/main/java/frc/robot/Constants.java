@@ -4,8 +4,16 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.apriltag.AprilTag;
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import java.util.ArrayList;
+import java.util.List;
 import swervelib.math.Matter;
 
 /**
@@ -87,21 +95,94 @@ public final class Constants
   public static final class VisionConstants {
       // Limelight Names
       public static final String BACK_LIMELIGHT = "limelight-back";  // On turret, for AprilTag targeting
-      
+
       // Camera physical mount (on turret)
       public static final double CAM_HEIGHT_METERS = 0.54;   // Camera lens height from floor 0.52
       public static final double CAM_MOUNT_ANGLE_DEG = 29.3; // Camera tilt upward from horizontal (calibrated)
-      
+
       // AprilTag target height (center of tag on Reef, 2026 Reefscape)
       public static final double TARGET_HEIGHT_METERS = 1.14; // Tag center height
       public static final double HEIGHT_DIFF_METERS = TARGET_HEIGHT_METERS - CAM_HEIGHT_METERS; // 0.62m
-      
+
       // Target AprilTag IDs (Reef tags) — per alliance
       public static final int[] RED_TAG_IDS = {10, 11};   // Red alliance: priority 10
       public static final int[] BLUE_TAG_IDS = {26, 27};  // Blue alliance: priority 26
-      
+
       // Turret PID for txnc tracking
       public static final double TURRET_KP = 0.5; // Proportional gain for txnc correction (tune on robot)
+
+      // === PhotonVision Constants ===
+
+      // AprilTag field layout for Reefscape 2026 (built from deploy/fieldmap/FRC2026_ANDYMARK.fmap)
+      public static final AprilTagFieldLayout APRIL_TAG_FIELD_LAYOUT = buildFieldLayout();
+
+      private static AprilTagFieldLayout buildFieldLayout() {
+          List<AprilTag> tags = new ArrayList<>();
+          // Tag positions extracted from FRC2026_ANDYMARK.fmap (x, y, z in meters)
+          tags.add(new AprilTag(1,  new Pose3d(new Translation3d( 3.605,  3.390, 0.889), new Rotation3d())));
+          tags.add(new AprilTag(2,  new Pose3d(new Translation3d( 3.642,  0.603, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(3,  new Pose3d(new Translation3d( 3.039,  0.355, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(4,  new Pose3d(new Translation3d( 3.039,  0.000, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(5,  new Pose3d(new Translation3d( 3.642, -0.604, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(6,  new Pose3d(new Translation3d( 3.605, -3.390, 0.889), new Rotation3d())));
+          tags.add(new AprilTag(7,  new Pose3d(new Translation3d( 3.680, -3.390, 0.889), new Rotation3d())));
+          tags.add(new AprilTag(8,  new Pose3d(new Translation3d( 3.998, -0.604, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(9,  new Pose3d(new Translation3d( 4.246, -0.356, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(10, new Pose3d(new Translation3d( 4.246,  0.000, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(11, new Pose3d(new Translation3d( 3.998,  0.603, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(12, new Pose3d(new Translation3d( 3.680,  3.390, 0.889), new Rotation3d())));
+          tags.add(new AprilTag(13, new Pose3d(new Translation3d( 8.240,  3.370, 0.552), new Rotation3d())));
+          tags.add(new AprilTag(14, new Pose3d(new Translation3d( 8.240,  2.939, 0.552), new Rotation3d())));
+          tags.add(new AprilTag(15, new Pose3d(new Translation3d( 8.240,  0.291, 0.552), new Rotation3d())));
+          tags.add(new AprilTag(16, new Pose3d(new Translation3d( 8.240, -0.141, 0.552), new Rotation3d())));
+          tags.add(new AprilTag(17, new Pose3d(new Translation3d(-3.610, -3.390, 0.889), new Rotation3d())));
+          tags.add(new AprilTag(18, new Pose3d(new Translation3d(-3.647, -0.604, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(19, new Pose3d(new Translation3d(-3.044, -0.356, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(20, new Pose3d(new Translation3d(-3.044,  0.000, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(21, new Pose3d(new Translation3d(-3.647,  0.603, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(22, new Pose3d(new Translation3d(-3.610,  3.390, 0.889), new Rotation3d())));
+          tags.add(new AprilTag(23, new Pose3d(new Translation3d(-3.685,  3.390, 0.889), new Rotation3d())));
+          tags.add(new AprilTag(24, new Pose3d(new Translation3d(-4.003,  0.603, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(25, new Pose3d(new Translation3d(-4.251,  0.355, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(26, new Pose3d(new Translation3d(-4.251,  0.000, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(27, new Pose3d(new Translation3d(-4.003, -0.604, 1.124), new Rotation3d())));
+          tags.add(new AprilTag(28, new Pose3d(new Translation3d(-3.685, -3.390, 0.889), new Rotation3d())));
+          tags.add(new AprilTag(29, new Pose3d(new Translation3d(-8.245, -3.371, 0.552), new Rotation3d())));
+          tags.add(new AprilTag(30, new Pose3d(new Translation3d(-8.245, -2.939, 0.552), new Rotation3d())));
+          tags.add(new AprilTag(31, new Pose3d(new Translation3d(-8.245, -0.291, 0.552), new Rotation3d())));
+          tags.add(new AprilTag(32, new Pose3d(new Translation3d(-8.245,  0.140, 0.552), new Rotation3d())));
+          // Field dimensions: ~16.54m x 8.13m (Reefscape 2026)
+          return new AprilTagFieldLayout(tags, 16.54, 8.13);
+      }
+
+      // PhotonVision cameras (names must match PhotonVision UI config)
+      public static final String PHOTON_RIGHT = "photon-right";
+      public static final String PHOTON_LEFT  = "photon-left";
+
+      // Camera mounting transforms (robot-to-camera) — TUNE AFTER CAD
+      public static final Transform3d RIGHT_CAMERA_TRANSFORM = new Transform3d(
+          new Translation3d(
+              Units.inchesToMeters(0),   // X: forward/back from robot center
+              Units.inchesToMeters(-6),  // Y: left/right (negative = right side)
+              Units.inchesToMeters(21)   // Z: height from floor
+          ),
+          new Rotation3d(0, 0, 0)       // Roll, Pitch, Yaw (facing forward)
+      );
+
+      public static final Transform3d LEFT_CAMERA_TRANSFORM = new Transform3d(
+          new Translation3d(
+              Units.inchesToMeters(0),
+              Units.inchesToMeters(6),   // Y: positive = left side
+              Units.inchesToMeters(21)
+          ),
+          new Rotation3d(0, 0, 0)       // Roll, Pitch, Yaw (facing forward)
+      );
+
+      // Alliance Hub positions (separate for Red and Blue)
+      // Red hub: center of tags {10, 11} at x≈4.12, y≈0.30
+      // Blue hub: center of tags {26, 27} at x≈-4.13, y≈-0.30
+      public static final Translation2d HUB_POSITION_RED  = new Translation2d(4.122, 0.302);
+      public static final Translation2d HUB_POSITION_BLUE = new Translation2d(-4.127, -0.302);
   }
 
   public static final class FeederConstants {
