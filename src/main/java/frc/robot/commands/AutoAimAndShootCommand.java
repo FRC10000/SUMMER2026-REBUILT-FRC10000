@@ -3,40 +3,48 @@ package frc.robot.commands;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.VisionConstants;
-import frc.robot.subsystems.FeederSubsystem;
+import frc.robot.subsystems.TurretSubsystem;
+import frc.robot.subsystems.PivotSubsystem;
 import frc.robot.subsystems.FlywheelSubsystem;
+import frc.robot.subsystems.FeederSubsystem;
 import frc.robot.subsystems.swervedrive.SwerveSubsystem;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.LimelightHelpers.RawFiducial;
 import frc.robot.util.VisionUtil;
 
 /**
- * Auto shoot command (vision-guided flywheel + feeder only):
- * - tync → distance → flywheel RPM lookup
- * - When flywheel reaches target, staged feeder sequence
- * - Intake retract logic has been extracted to IntakeRetractCommand
+ * Combined AutoAim + AutoShoot command:
+ * - Turret + pivot vision alignment (from AutoAim)
+ * - When aligned, flywheel spins up and feeder shoots (from AutoShoot)
+ * - Alliance-aware tag filtering: Red {10,11} priority 10, Blue {26,27} priority 26
+ * - If no target visible, stays still (does nothing)
  */
-public class AutoShootCommand extends Command {
+public class AutoAimAndShootCommand extends Command {
 
     private static final String LIMELIGHT_NAME = VisionConstants.BACK_LIMELIGHT;
+    private static final double FLYWHEEL_TOLERANCE_RPM = 200.0;
 
     private final SwerveSubsystem m_drivebase;
+    private final TurretSubsystem m_turret;
+    private final PivotSubsystem m_pivot;
     private final FlywheelSubsystem m_flywheel;
     private final FeederSubsystem m_feeder;
-
-    private static final double FLYWHEEL_TOLERANCE_RPM = 200.0;
-    private final Timer shootTimer = new Timer();
 
     private int m_execCount = 0;
     private RawFiducial[] m_cachedFiducials = new RawFiducial[0];
     private boolean m_isShooting = false;
+    private final Timer shootTimer = new Timer();
 
-    public AutoShootCommand(SwerveSubsystem drive, FlywheelSubsystem flywheel, FeederSubsystem feeder) {
+    public AutoAimAndShootCommand(SwerveSubsystem drive, TurretSubsystem turret, PivotSubsystem pivot,
+                                   FlywheelSubsystem flywheel, FeederSubsystem feeder) {
         m_drivebase = drive;
+        m_turret = turret;
+        m_pivot = pivot;
         m_flywheel = flywheel;
         m_feeder = feeder;
-        addRequirements(flywheel, feeder);
+        addRequirements(turret, pivot, flywheel, feeder);
     }
 
     @Override
@@ -48,34 +56,50 @@ public class AutoShootCommand extends Command {
 
     @Override
     public void execute() {
-        // 1. 获取检测到的 AprilTag (每3周期读一次)
+        // 1. 读取 limelight fiducials (每3周期)
         if (++m_execCount >= 3) {
             m_execCount = 0;
             m_cachedFiducials = LimelightHelpers.getRawFiducials(LIMELIGHT_NAME);
         }
 
+        // 2. 根据联盟选择目标 tag IDs
         int[] targetIds = getTargetTagIds();
+
+        // 3. 找最佳目标
         RawFiducial bestTarget = VisionUtil.findNearestTarget(m_cachedFiducials, LIMELIGHT_NAME, targetIds);
 
+        // 4. 没目标且不在射击中 → 什么都不做 (原地不动)
         if (bestTarget == null && !m_isShooting) {
-            m_flywheel.setTargetRPM(1500);
-            m_feeder.idleMod();
-            shootTimer.stop();
-            shootTimer.reset();
             return;
         }
 
-        // 2. 距离计算与飞轮转速查表
         double targetFlywheelRpm = 1500;
+
         if (bestTarget != null) {
+            // === 瞄准逻辑 (from AutoAim) ===
+
+            // Turret 左右锁定
+            double currentTurretAngle = m_turret.getCurrentAngle();
+            double turretCorrection = Math.abs(bestTarget.txnc) > 1.5
+                ? VisionConstants.TURRET_KP * bestTarget.txnc : 0;
+            m_turret.setTargetAngle(currentTurretAngle + turretCorrection);
+
+            // Pivot 上下
             double horizontalDistance = VisionUtil.computeHorizontalDistance(bestTarget.tync);
+            SmartDashboard.putNumber("AutoAimShoot/TagID", bestTarget.id);
+            SmartDashboard.putNumber("AutoAimShoot/horizDist", horizontalDistance);
+            SmartDashboard.putNumber("AutoAimShoot/txnc", bestTarget.txnc);
             if (horizontalDistance > 0) {
+                double pivotAngle = VisionUtil.lookupPivotAngle(horizontalDistance);
+                m_pivot.setTargetAngle(pivotAngle);
                 targetFlywheelRpm = VisionUtil.lookupFlywheelRPM(horizontalDistance);
-                m_flywheel.setTargetRPM(targetFlywheelRpm);
             }
+
+            // === 射击逻辑 (from AutoShoot) ===
+            m_flywheel.setTargetRPM(targetFlywheelRpm);
         }
 
-        // 3. 检查飞轮是否准备就绪，或者已经处于射击序列中
+        // 飞轮就绪或已在射击序列中
         boolean flywheelReady = Math.abs(m_flywheel.getCurrentRPM() - targetFlywheelRpm) <= FLYWHEEL_TOLERANCE_RPM;
 
         if (flywheelReady || m_isShooting) {
@@ -84,16 +108,15 @@ public class AutoShootCommand extends Command {
                 shootTimer.start();
             }
 
-            // 步骤 A：小轮立刻正转
+            // 小轮立刻正转
             m_feeder.shootFeederWheel();
 
-            // 步骤 B：当小轮转过 0.3 秒后，大轮加入
+            // 0.3s 后大轮加入
             if (shootTimer.get() >= 0.3) {
                 m_feeder.shootFeeder();
             }
-        } else {
-            shootTimer.stop();
-            shootTimer.reset();
+        } else if (bestTarget != null) {
+            // 有目标但飞轮还没到，feeder 保持 idle
             m_feeder.idleMod();
         }
     }
@@ -104,6 +127,8 @@ public class AutoShootCommand extends Command {
         shootTimer.reset();
         m_flywheel.stop();
         m_feeder.idleMod();
+        m_turret.setTargetAngle(0.0);
+        m_pivot.setTargetAngle(0.0);
         m_isShooting = false;
     }
 

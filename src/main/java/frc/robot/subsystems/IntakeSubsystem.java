@@ -15,30 +15,29 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants.IntakeConstants;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 
 public class IntakeSubsystem extends SubsystemBase {
 
-    // // 伸缩机构 (Kraken X44)
-    private final TalonFX m_deployLeft = new TalonFX(30, "canivore");
-    private final TalonFX m_deployRight = new TalonFX(31, "canivore");
+    // 伸缩机构 (Kraken X44)
+    private final TalonFX m_deployLeft = new TalonFX(IntakeConstants.DEPLOY_LEFT_ID, IntakeConstants.CAN_BUS);
+    private final TalonFX m_deployRight = new TalonFX(IntakeConstants.DEPLOY_RIGHT_ID, IntakeConstants.CAN_BUS);
 
-    // // Intake 滚轴电机
-    private final TalonFX m_rollerMaster = new TalonFX(32, "canivore");
-    private final TalonFX m_rollerFollower = new TalonFX(33, "canivore");
+    // Intake 滚轴电机
+    private final TalonFX m_rollerMaster = new TalonFX(IntakeConstants.ROLLER_MASTER_ID, IntakeConstants.CAN_BUS);
+    private final TalonFX m_rollerFollower = new TalonFX(IntakeConstants.ROLLER_FOLLOWER_ID, IntakeConstants.CAN_BUS);
     
 
     // 声明一个基于电压的位置控制请求对象 (Slot 0)
     private final PositionVoltage m_positionRightRequest = new PositionVoltage(0).withSlot(0);
     private final PositionVoltage m_positionLeftRequest = new PositionVoltage(0).withSlot(0);
-    
-    // 【关键】：你需要填入你们推出机构的实际齿轮减速比！
-    // 假设你们用的是 25:1 的行星减速箱，这里就填 25.0
-    private final double GEAR_RATIO = 4.714; 
-    private final double TARGET_DEPLOY_ANGLE_DEGREES = - 4 * 360; // 你想要的目标角度 (可以根据需要调整)
-    public static final double FULL_DEPLOY_DEGREES = -4 * 360;
-    private final double INTAKE_SPEED = -1;
-    private final double SYNC_TOLERANCE_DEGREES = 5.0;
+
+    private final double GEAR_RATIO = IntakeConstants.GEAR_RATIO;
+    private final double TARGET_DEPLOY_ANGLE_DEGREES = IntakeConstants.FULL_DEPLOY_DEGREES;
+    public static final double FULL_DEPLOY_DEGREES = IntakeConstants.FULL_DEPLOY_DEGREES;
+    private final double INTAKE_SPEED = IntakeConstants.INTAKE_SPEED;
+    private final double SYNC_TOLERANCE_DEGREES = IntakeConstants.SYNC_TOLERANCE_DEGREES;
 
     private boolean deployExtended = false;
 
@@ -46,14 +45,14 @@ public class IntakeSubsystem extends SubsystemBase {
         TalonFXConfiguration deployConfig = new TalonFXConfiguration();
         
         // 1. 配置控制参数 (Slot 0)
-        deployConfig.Slot0.kP = 1.1; // 比例控制
+        deployConfig.Slot0.kP = IntakeConstants.DEPLOY_KP;
         deployConfig.Slot0.kI = 0.0;
-        deployConfig.Slot0.kD = 0.2; // 微分控制
-        
-        // 2. 强烈建议：加上电流限制和刹车模式，防止两个电机对顶时烧毁
-        deployConfig.CurrentLimits.StatorCurrentLimit = 35.0; // 限制在 35A 保护
+        deployConfig.Slot0.kD = IntakeConstants.DEPLOY_KD;
+
+        // 2. 电流限制和刹车模式
+        deployConfig.CurrentLimits.StatorCurrentLimit = IntakeConstants.STATOR_CURRENT_LIMIT;
         deployConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        deployConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake; // 必须是刹车
+        deployConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
         // 3. 【关键】：将这一套完全相同的配置，应用给两台电机！
         // 这样 Follower 内部才会有完全一样的 kP 和 kD 去做追踪

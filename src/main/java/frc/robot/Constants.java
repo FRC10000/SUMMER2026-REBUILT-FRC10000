@@ -90,8 +90,9 @@ public final class Constants
       public static final double TARGET_HEIGHT_METERS = 1.14; // Tag center height
       public static final double HEIGHT_DIFF_METERS = TARGET_HEIGHT_METERS - CAM_HEIGHT_METERS; // 0.62m
       
-      // Target AprilTag IDs (Reef tags)
-      public static final int[] TARGET_TAG_IDS = {2, 9, 10, 11};
+      // Target AprilTag IDs (Reef tags) — per alliance
+      public static final int[] RED_TAG_IDS = {10, 11};   // Red alliance: priority 10
+      public static final int[] BLUE_TAG_IDS = {26, 27};  // Blue alliance: priority 26
       
       // Turret PID for txnc tracking
       public static final double TURRET_KP = 0.5; // Proportional gain for txnc correction (tune on robot)
@@ -124,6 +125,28 @@ public final class Constants
       
       // Horizontal distance (meters) -> Flywheel RPM lookup (for future use)
       public static final double[] DISTANCE_TO_RPM_DISTANCE = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0};
-      public static final double[] DISTANCE_TO_RPM_RPM = {1500, 1800.0, 2000.0, 2600.0, 3000.0, 3400.0, 3800.0, 4400};
+      public static final double[] DISTANCE_TO_RPM_RPM = {1500, 1800.0, 2000.0, 2600.0, 3000.0, 3400.0, 3800.0};
+  }
+
+  public static final class IntakeConstants {
+      public static final int DEPLOY_LEFT_ID = 30;
+      public static final int DEPLOY_RIGHT_ID = 31;
+      public static final int ROLLER_MASTER_ID = 32;
+      public static final int ROLLER_FOLLOWER_ID = 33;
+      public static final String CAN_BUS = "canivore";
+      public static final double GEAR_RATIO = 4.714;
+      public static final double FULL_DEPLOY_DEGREES = -4 * 360; // -1440
+      public static final double INTAKE_SPEED = -1.0;
+      public static final double SYNC_TOLERANCE_DEGREES = 5.0;
+      public static final double DEPLOY_KP = 1.1;
+      public static final double DEPLOY_KD = 0.2;
+      public static final double STATOR_CURRENT_LIMIT = 35.0;
+  }
+
+  public static final class PassShootConstants {
+      public static final double PASS_RPM = 2000.0;
+      public static final double PASS_PIVOT_ANGLE = 30.0;
+      public static final double PASS_DELAY_SECONDS = 0.3;
+      public static final double MAX_TURRET_HEADING_OFFSET = 90.0;
   }
 }

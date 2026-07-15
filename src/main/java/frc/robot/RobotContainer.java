@@ -5,14 +5,16 @@ import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-// import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard; // 取消这里不必要的 SmartDashboard
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.Constants.PassShootConstants;
+import frc.robot.commands.AutoAimAndShootCommand;
 import frc.robot.commands.AutoAimCommand;
 import frc.robot.commands.AutoShootCommand;
+import frc.robot.commands.IntakeRetractCommand;
 import frc.robot.commands.PassShootCommand;
 import frc.robot.subsystems.FeederSubsystem;
 import frc.robot.subsystems.FlywheelSubsystem;
@@ -23,7 +25,6 @@ import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.swervedrive.SwerveSubsystem;
 import java.io.File;
 import swervelib.SwerveInputStream;
-import frc.robot.commands.AutoShootCommand;
 
 public class RobotContainer {
 
@@ -39,9 +40,6 @@ public class RobotContainer {
   
   private double pivotTestAngle = 0.0;
   private double turretTestAngle = 0.0;
-
-  private static final double PASS_RPM = 2000.0;
-  private static final double PASS_PIVOT_ANGLE = 10.0;
 
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(),
           () -> driverXbox.getLeftY(),
@@ -66,7 +64,7 @@ public class RobotContainer {
     NamedCommands.registerCommand("stop_shooter",
         Commands.runOnce(flywheel::stop, flywheel));
     NamedCommands.registerCommand("pass_shoot",
-        new PassShootCommand(turret, flywheel, pivot, PASS_RPM, PASS_PIVOT_ANGLE, 0));
+        new PassShootCommand(drivebase, turret, flywheel, pivot, feeder));
     NamedCommands.registerCommand("auto_aim", new AutoAimCommand(drivebase, turret, pivot));
 
     autoChooser = AutoBuilder.buildAutoChooser();
@@ -98,21 +96,26 @@ public class RobotContainer {
 
     // --- FLYWHEEL TEST ---
     driverXbox.leftBumper().whileTrue(intake.reverseIntakeCommand());
-    driverXbox.rightBumper().whileTrue(Commands.run(() -> flywheel.setTargetRPM(2000), flywheel));
     driverXbox.a().onTrue(Commands.runOnce(flywheel::stop, flywheel));
 
-    // --- 【需求2】 Y键插值射击 (与AutoAim无关) ---
-    // 逻辑：按下Y -> 计算距离 -> 启动飞轮(插值或1500) -> 等待提速 -> 供球
-    // 松开Y -> 飞轮停止 (Feeder会因为setDefaultCommand自动回退到反转idle)
-    driverXbox.y().whileTrue(
-        new AutoShootCommand(drivebase, flywheel, feeder, intake)
+    // --- Y键：Intake回收 + 滚轮反转 ---
+    driverXbox.y().whileTrue(new IntakeRetractCommand(intake));
+
+    // --- X键：手动供弹测试 ---
+    driverXbox.x().whileTrue(feeder.shootCommand());
+
+    // --- Left Trigger：进件 (deploy + roller) ---
+    driverXbox.leftTrigger().whileTrue(intake.acquireFuelCommand(() -> false));
+
+    // --- Right Trigger：AutoAim + AutoShoot 联合瞄准射击 ---
+    driverXbox.rightTrigger().whileTrue(
+        new AutoAimAndShootCommand(drivebase, turret, pivot, flywheel, feeder)
     );
 
-    // 原来的 X 键 shoot 测试可以保留或注释
-    driverXbox.x().whileTrue(feeder.shootCommand());
-    driverXbox.leftTrigger().whileTrue(intake.acquireFuelCommand(() -> false));
-    // --- AUTOAIM TEST ---
-    driverXbox.rightTrigger().whileTrue(new AutoAimCommand(drivebase, turret, pivot));
+    // --- Right Bumper：PassShoot (turret补偿车身朝向 + 射击) ---
+    driverXbox.rightBumper().whileTrue(
+        new PassShootCommand(drivebase, turret, flywheel, pivot, feeder)
+    );
   }
 
   public Command getAutonomousCommand() { return autoChooser.getSelected(); }
