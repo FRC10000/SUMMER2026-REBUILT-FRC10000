@@ -2,7 +2,7 @@
 
 > Java 17 | WPILib 2026.2.1 | Command-Based Framework | GradleRIO
 
-This repository contains the full robot code for **FRC Team 10000**'s 2026 Reefscape season robot. The robot features a YAGSL swerve drivetrain, a multi-stage shooter with vision-guided auto-aim, a retractable intake, and addressable LED status indicators.
+This repository contains the full robot code for **FRC Team 10000**'s 2026 Rebuilt season robot. The robot features a YAGSL swerve drivetrain, a multi-stage shooter with vision-guided auto-aim, a retractable intake, and addressable LED status indicators.
 
 ---
 
