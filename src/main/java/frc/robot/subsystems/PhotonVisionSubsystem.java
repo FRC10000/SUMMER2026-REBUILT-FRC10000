@@ -17,6 +17,8 @@ public class PhotonVisionSubsystem extends SubsystemBase {
 
     // Minimum tags required to trust a pose estimate (when multi-tag PnP unavailable)
     private static final int MIN_TAGS = 2;
+    // Single-tag pose accepted only within this distance (meters)
+    private static final double SINGLE_TAG_MAX_DISTANCE = 4.0;
 
     private final PhotonCamera m_rightCamera = new PhotonCamera("photon-right");
     private final PhotonCamera m_leftCamera  = new PhotonCamera("photon-left");
@@ -51,11 +53,15 @@ public class PhotonVisionSubsystem extends SubsystemBase {
             if (!result.hasTargets()) continue;
 
             // Reliability gate: multi-tag PnP is most accurate;
-            // for single-tag, only accept if the result has low estimated pose ambiguity
+            // for single-tag, only accept if within range
             var poseOptional = estimator.estimateCoprocMultiTagPose(result);
             if (poseOptional.isEmpty()) {
-                // Multi-tag unavailable — require >= 2 targets for reliability
-                if (result.getTargets().size() < MIN_TAGS) continue;
+                if (result.getTargets().size() < MIN_TAGS) {
+                    // Single tag — accept only if close enough
+                    var tag = result.getTargets().get(0);
+                    double dist = tag.getBestCameraToTarget().getTranslation().getNorm();
+                    if (dist > SINGLE_TAG_MAX_DISTANCE) continue;
+                }
                 poseOptional = estimator.estimateLowestAmbiguityPose(result);
             }
 

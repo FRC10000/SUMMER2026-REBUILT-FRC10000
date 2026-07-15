@@ -117,11 +117,6 @@ public class RobotContainer {
     driverXbox.rightBumper().whileTrue(
         new PassShootCommand(drivebase, turret, flywheel, pivot, feeder)
     );
-
-    // --- Left Trigger：AutoAim with odometry fallback ---
-    driverXbox.leftTrigger().whileTrue(
-        new AutoAimAndShootCommand(drivebase, turret, pivot, flywheel, feeder)
-    );
   }
 
   public Command getAutonomousCommand() { return autoChooser.getSelected(); }

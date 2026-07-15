@@ -151,7 +151,7 @@ public final class Constants
           tags.add(new AprilTag(30, new Pose3d(new Translation3d(-8.245, -2.939, 0.552), new Rotation3d())));
           tags.add(new AprilTag(31, new Pose3d(new Translation3d(-8.245, -0.291, 0.552), new Rotation3d())));
           tags.add(new AprilTag(32, new Pose3d(new Translation3d(-8.245,  0.140, 0.552), new Rotation3d())));
-          // Field dimensions: ~16.54m x 8.13m (Reefscape 2026)
+          // Field dimensions: ~16.54m x 8.13m (ReBuilt 2026)
           return new AprilTagFieldLayout(tags, 16.54, 8.13);
       }
 
