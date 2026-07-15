@@ -1,8 +1,8 @@
-# FRC Team 10000 — 2026 Reefscape Robot Code
+# FRC Team 10000 — 2026 Rebuilt Robot Code
 
 > Java 17 | WPILib 2026.2.1 | Command-Based Framework | GradleRIO
 
-This repository contains the full robot code for **FRC Team 10000**'s 2026 Reefscape season robot. The robot features a YAGSL swerve drivetrain, a multi-stage shooter with vision-guided auto-aim, a retractable intake, and addressable LED status indicators.
+This repository contains the full robot code for **FRC Team 10000**'s 2026 Rebuilt season robot. The robot features a YAGSL swerve drivetrain, a multi-stage shooter with vision-guided auto-aim, a retractable intake, and addressable LED status indicators.
 
 ---
 
@@ -67,7 +67,7 @@ This repository contains the full robot code for **FRC Team 10000**'s 2026 Reefs
 | Attribute | Value |
 |---|---|
 | Team Number | 10000 |
-| Season | 2026 — Reefscape |
+| Season | 2026 — Rebuilt |
 | Drivetrain | 4-module swerve (Falcon 500 / TalonFX) |
 | Max Speed | 14.5 ft/s (4.42 m/s) |
 | Shooter | 4-motor flywheel + pivoting turret + feeder |
