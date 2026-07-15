@@ -67,7 +67,7 @@ This repository contains the full robot code for **FRC Team 10000**'s 2026 Rebui
 | Attribute | Value |
 |---|---|
 | Team Number | 10000 |
-| Season | 2026 — Reefscape |
+| Season | 2026 — Rebuilt |
 | Drivetrain | 4-module swerve (Falcon 500 / TalonFX) |
 | Max Speed | 14.5 ft/s (4.42 m/s) |
 | Shooter | 4-motor flywheel + pivoting turret + feeder |
