@@ -1,4 +1,4 @@
-# FRC Team 10000 — 2026 Reefscape Robot Code
+# FRC Team 10000 — 2026 Rebuilt Robot Code
 
 > Java 17 | WPILib 2026.2.1 | Command-Based Framework | GradleRIO
 
