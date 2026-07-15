@@ -30,9 +30,9 @@ public class TurretSubsystem extends SubsystemBase {
 
         // 【修改1：大幅提高 kP，并加入 kS 和 kD】
         // 对于 Voltage 控制，kP 推荐在 40.0 到 100.0 之间起步测试
-        config.Slot0.kP = 60.0; // 每偏差 1 圈，输出 60V (由于被电瓶 12V 截断，相当于偏差 0.2 圈就能给满 12V)
+        config.Slot0.kP = 75.0; // 每偏差 1 圈，输出 60V (由于被电瓶 12V 截断，相当于偏差 0.2 圈就能给满 12V)
         config.Slot0.kI = 0.0;
-        config.Slot0.kD = 5.0;  // 增加 kD 防止目标位置震荡
+        config.Slot0.kD = 10.0;  // 增加 kD 防止目标位置震荡
         
         // kS 是克服静态摩擦力的基础电压。如果你的炮塔很重，可以给 0.2V ~ 0.5V，它会在电机启动瞬间推一把。
         config.Slot0.kS = 0.25; 

@@ -11,6 +11,7 @@ import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -35,8 +36,11 @@ public class IntakeSubsystem extends SubsystemBase {
     // 假设你们用的是 25:1 的行星减速箱，这里就填 25.0
     private final double GEAR_RATIO = 4.714; 
     private final double TARGET_DEPLOY_ANGLE_DEGREES = - 4 * 360; // 你想要的目标角度 (可以根据需要调整)
+    public static final double FULL_DEPLOY_DEGREES = -4 * 360;
     private final double INTAKE_SPEED = -1;
-    private final double SYNC_TOLERANCE_DEGREES = 5.0; 
+    private final double SYNC_TOLERANCE_DEGREES = 5.0;
+
+    private boolean deployExtended = false;
 
     public IntakeSubsystem() {
         TalonFXConfiguration deployConfig = new TalonFXConfiguration();
@@ -65,7 +69,14 @@ public class IntakeSubsystem extends SubsystemBase {
         m_rollerFollower.setControl(new Follower(m_rollerMaster.getDeviceID(), MotorAlignmentValue.Opposed));
     }
 
-    
+    @Override
+    public void periodic() {
+        double leftDeg = (m_deployLeft.getPosition().getValueAsDouble() / GEAR_RATIO) * 360.0;
+        double rightDeg = (-m_deployRight.getPosition().getValueAsDouble() / GEAR_RATIO) * 360.0;
+        SmartDashboard.putNumber("Intake/DeployLeftDeg", leftDeg);
+        SmartDashboard.putNumber("Intake/DeployRightDeg", rightDeg);
+        SmartDashboard.putBoolean("Intake/DeployExtended", deployExtended);
+    }
 
     // --- 角度/位置控制逻辑 ---
     
@@ -99,6 +110,23 @@ public class IntakeSubsystem extends SubsystemBase {
     public void setDeployBack() {
         setDeployNeutralMode(NeutralModeValue.Brake);
         setDeployAngle(0);
+    }
+
+    public void toggleDeploy() {
+        if (deployExtended) {
+            deployExtended = false;
+            setDeployBack();
+        } else {
+            deployExtended = true;
+            setDeployNeutralMode(NeutralModeValue.Brake);
+            setDeployAngle(-180);
+        }
+    }
+
+    public void deployOut() {
+        deployExtended = true;
+        setDeployNeutralMode(NeutralModeValue.Brake);
+        setDeployAngle(-180);
     }
 
     // // --- 封装为 Commands ---

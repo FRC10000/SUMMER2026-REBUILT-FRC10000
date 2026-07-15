@@ -4,6 +4,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 // import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard; // 取消这里不必要的 SmartDashboard
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -70,7 +71,7 @@ public class RobotContainer {
 
     autoChooser = AutoBuilder.buildAutoChooser();
     // 按照需求清理 SmartDashboard，如果你连 Auto Chooser 都不想要，可以注释掉下面这行
-    // SmartDashboard.putData("Auto Choose", autoChooser);
+    SmartDashboard.putData("Auto Choose", autoChooser);
   }
 
   private void configureBindings() {
@@ -83,15 +84,9 @@ public class RobotContainer {
     driverXbox.start().and(driverXbox.back())
         .onTrue(Commands.runOnce(drivebase::zeroGyro));
 
-    // --- PIVOT & TURRET TEST (保留你原本的代码) ---
-    driverXbox.povUp().onTrue(Commands.runOnce(() -> {
-      pivotTestAngle = Math.min(pivotTestAngle + 10.0, 35.0);
-      pivot.setTargetAngle(pivotTestAngle);
-    }, pivot));
-    driverXbox.povDown().onTrue(Commands.runOnce(() -> {
-      pivotTestAngle = Math.max(pivotTestAngle - 10.0, 0.0);
-      pivot.setTargetAngle(pivotTestAngle);
-    }, pivot));
+    // --- INTAKE DEPLOY ---
+    driverXbox.povUp().onTrue(Commands.runOnce(intake::deployOut, intake));
+    driverXbox.povDown().onTrue(Commands.runOnce(intake::setDeployBack, intake));
     driverXbox.povLeft().onTrue(Commands.runOnce(() -> {
       turretTestAngle -= 15.0;
       turret.setTargetAngle(turretTestAngle);
@@ -102,7 +97,7 @@ public class RobotContainer {
     }, turret));
 
     // --- FLYWHEEL TEST ---
-    driverXbox.leftBumper().whileTrue(Commands.run(() -> flywheel.setTargetRPM(1000), flywheel));
+    driverXbox.leftBumper().whileTrue(intake.reverseIntakeCommand());
     driverXbox.rightBumper().whileTrue(Commands.run(() -> flywheel.setTargetRPM(2000), flywheel));
     driverXbox.a().onTrue(Commands.runOnce(flywheel::stop, flywheel));
 
@@ -110,12 +105,12 @@ public class RobotContainer {
     // 逻辑：按下Y -> 计算距离 -> 启动飞轮(插值或1500) -> 等待提速 -> 供球
     // 松开Y -> 飞轮停止 (Feeder会因为setDefaultCommand自动回退到反转idle)
     driverXbox.y().whileTrue(
-        new AutoShootCommand(drivebase, flywheel, feeder)
+        new AutoShootCommand(drivebase, flywheel, feeder, intake)
     );
 
     // 原来的 X 键 shoot 测试可以保留或注释
     driverXbox.x().whileTrue(feeder.shootCommand());
-    driverXbox.leftTrigger().whileTrue(intake.runIntakeCommand());
+    driverXbox.leftTrigger().whileTrue(intake.acquireFuelCommand(() -> false));
     // --- AUTOAIM TEST ---
     driverXbox.rightTrigger().whileTrue(new AutoAimCommand(drivebase, turret, pivot));
   }

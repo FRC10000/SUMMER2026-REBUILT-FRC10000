@@ -1,6 +1,6 @@
 {
-  "robotWidth": 0.4766,
-  "robotLength": 0.6283,
+  "robotWidth": 0.628,
+  "robotLength": 0.477,
   "holonomicMode": true,
   "pathFolders": [],
   "autoFolders": [],
@@ -17,7 +17,7 @@
   "maxDriveSpeed": 4.42,
   "driveMotorType": "falcon500",
   "driveCurrentLimit": 40.0,
-  "wheelCOF": 1.0,
+  "wheelCOF": 1.1,
   "flModuleX": 0.3141,
   "flModuleY": 0.2383,
   "frModuleX": 0.3141,

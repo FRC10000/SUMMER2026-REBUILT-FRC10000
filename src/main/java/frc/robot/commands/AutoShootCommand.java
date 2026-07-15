@@ -6,6 +6,7 @@ import frc.robot.Constants.ShooterLookupConstants;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.subsystems.FeederSubsystem;
 import frc.robot.subsystems.FlywheelSubsystem;
+import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.swervedrive.SwerveSubsystem;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.LimelightHelpers.RawFiducial;
@@ -23,19 +24,24 @@ public class AutoShootCommand extends Command {
     private final SwerveSubsystem m_drivebase;
     private final FlywheelSubsystem m_flywheel;
     private final FeederSubsystem m_feeder;
+    private final IntakeSubsystem m_intake;
 
     private static final double FLYWHEEL_TOLERANCE_RPM = 200.0;
+    private static final double HALF_DEPLOY_FRACTION = 0.5;
+    private static final double ROLLER_REVERSE_POWER = -0.2;
     private final Timer shootTimer = new Timer();
 
     private int m_execCount = 0;
     private RawFiducial[] m_cachedFiducials = new RawFiducial[0];
-        private boolean m_isShooting = false; // 新增：发射状态锁
+    private boolean m_isShooting = false;
 
-    public AutoShootCommand(SwerveSubsystem drive, FlywheelSubsystem flywheel, FeederSubsystem feeder) {
+    public AutoShootCommand(SwerveSubsystem drive, FlywheelSubsystem flywheel, FeederSubsystem feeder,
+                            IntakeSubsystem intake) {
         m_drivebase = drive;
         m_flywheel = flywheel;
         m_feeder = feeder;
-        addRequirements(flywheel, feeder);
+        m_intake = intake;
+        addRequirements(flywheel, feeder, intake);
     }
 
     @Override
@@ -82,6 +88,12 @@ public class AutoShootCommand extends Command {
                 shootTimer.start();
             }
 
+            // 射击 2 秒后：intake 往内伸缩 + 滚轴反转
+            if (shootTimer.get() >= 2.0) {
+                m_intake.setDeployAngle(IntakeSubsystem.FULL_DEPLOY_DEGREES * HALF_DEPLOY_FRACTION);
+                m_intake.setRollerSpeed(ROLLER_REVERSE_POWER);
+            }
+
             // 步骤 A：小轮立刻正转
             m_feeder.shootFeederWheel();
 
@@ -103,7 +115,9 @@ public class AutoShootCommand extends Command {
         shootTimer.reset();
         m_flywheel.stop();
         m_feeder.idleMod();
-        m_isShooting = false; 
+        m_intake.setRollerSpeed(0);
+        m_intake.setDeployAngle(IntakeSubsystem.FULL_DEPLOY_DEGREES);
+        m_isShooting = false;
     }
 
     // ================= 辅助方法 (保持不变) =================
