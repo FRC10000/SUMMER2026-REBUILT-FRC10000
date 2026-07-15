@@ -45,13 +45,19 @@ public final class Constants
     // Joystick Deadband
     public static final double DEADBAND        = 0.2;
 
+    // Joystick input curve: output = maxSpeed * |x|^exponent
+    public static final double MAX_TRANSLATION_SPEED = 0.6;
+    public static final double CURVE_EXPONENT        = 2.41; // f(0.75) = 0.30
+
     // Set to false to disable drivetrain (for subsystem testing)
     public static final boolean DRIVE_ENABLED  = true;
 
     // Vision alignment
     public static final boolean VISION_DRIVE_ENABLED = false; // Disable Limelight for manual testing
     public static final double  AIM_P_GAIN           = 0.05; // P-gain for vision target aiming
+    
   }
+
 
   public static final class FlywheelConstants {
         public static final int FRONT_RIGHT_ID = 4;
@@ -114,7 +120,7 @@ public final class Constants
 
       // Shooting state
       public static final double kShootFeederSpeed = 0.4;
-      public static final double kShootWheelSpeed = 0.7;
+      public static final double kShootWheelSpeed = 0.5;
   }
 
   public static final class ShooterLookupConstants {

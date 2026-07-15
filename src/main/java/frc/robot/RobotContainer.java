@@ -2,6 +2,7 @@ package frc.robot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -42,11 +43,9 @@ public class RobotContainer {
   private double turretTestAngle = 0.0;
 
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(),
-          () -> driverXbox.getLeftY(),
-          () -> driverXbox.getLeftX())
+          () -> applyInputCurve(driverXbox.getLeftY()),
+          () -> applyInputCurve(driverXbox.getLeftX()))
       .withControllerRotationAxis(() -> -driverXbox.getRightX())
-      .deadband(OperatorConstants.DEADBAND)
-      .scaleTranslation(0.4)
       .allianceRelativeControl(true);
 
   public RobotContainer() {
@@ -126,5 +125,14 @@ public class RobotContainer {
     pivotTestAngle = 0.0;
     turret.setTargetAngle(0.0);
     turretTestAngle = 0.0;
+  }
+
+  private static double applyInputCurve(double raw) {
+    double deadbanded = MathUtil.applyDeadband(raw, OperatorConstants.DEADBAND);
+    if (deadbanded == 0) return 0;
+    double sign = Math.signum(deadbanded);
+    double magnitude = Math.abs(deadbanded);
+    return sign * OperatorConstants.MAX_TRANSLATION_SPEED
+           * Math.pow(magnitude, OperatorConstants.CURVE_EXPONENT);
   }
 }
