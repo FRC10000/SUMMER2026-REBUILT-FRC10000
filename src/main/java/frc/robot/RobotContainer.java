@@ -132,9 +132,9 @@ public class RobotContainer {
     driverXbox.leftTrigger().whileTrue(intake.acquireFuelCommand(() -> false));
 
     // --- Right Trigger：AutoAim + AutoShoot 联合瞄准射击 ---
-    driverXbox.rightTrigger().whileTrue(
-        new AutoAimAndShootCommand(drivebase, turret, pivot, flywheel, feeder)
-    );
+    // driverXbox.rightTrigger().whileTrue(
+    //     new AutoAimAndShootCommand(drivebase, turret, pivot, flywheel, feeder, driverXbox.getHID())
+    // );
 
     // --- Right Bumper：PassShoot (turret补偿车身朝向 + 射击) ---
     driverXbox.rightBumper().whileTrue(

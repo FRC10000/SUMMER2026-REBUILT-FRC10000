@@ -4,6 +4,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.VisionConstants;
@@ -28,25 +29,40 @@ public class AutoAimAndShootCommand extends Command {
     private static final String LIMELIGHT_NAME = VisionConstants.BACK_LIMELIGHT;
     private static final double FLYWHEEL_RPM = 6000.0;
     private static final double SHOOT_RPM_THRESHOLD = 5600.0;
+    private static final double PIVOT_STEP = 1.0;
+    private static final int POV_UP = 0;
+    private static final int POV_DOWN = 180;
 
     private final SwerveSubsystem m_drivebase;
     private final TurretSubsystem m_turret;
     private final PivotSubsystem m_pivot;
     private final FlywheelSubsystem m_flywheel;
     private final FeederSubsystem m_feeder;
+    private final XboxController m_controller; // null in auto mode
 
     private int m_execCount = 0;
     private RawFiducial[] m_cachedFiducials = new RawFiducial[0];
     private boolean m_isShooting = false;
+    private double m_pivotOffset = 0;
+    private int m_lastPOV = -1;
     private final Timer shootTimer = new Timer();
 
+    /** Auto-mode constructor (no controller, no manual pivot adjustment). */
     public AutoAimAndShootCommand(SwerveSubsystem drive, TurretSubsystem turret, PivotSubsystem pivot,
                                    FlywheelSubsystem flywheel, FeederSubsystem feeder) {
+        this(drive, turret, pivot, flywheel, feeder, null);
+    }
+
+    /** Teleop-mode constructor with D-pad pivot adjustment. */
+    public AutoAimAndShootCommand(SwerveSubsystem drive, TurretSubsystem turret, PivotSubsystem pivot,
+                                   FlywheelSubsystem flywheel, FeederSubsystem feeder,
+                                   XboxController controller) {
         m_drivebase = drive;
         m_turret = turret;
         m_pivot = pivot;
         m_flywheel = flywheel;
         m_feeder = feeder;
+        m_controller = controller;
         addRequirements(turret, pivot, flywheel, feeder);
     }
 
@@ -55,10 +71,24 @@ public class AutoAimAndShootCommand extends Command {
         shootTimer.stop();
         shootTimer.reset();
         m_isShooting = false;
+        m_pivotOffset = 0;
+        m_lastPOV = -1;
     }
 
     @Override
     public void execute() {
+        // 0. Manual pivot offset via D-pad (rising-edge, teleop only)
+        if (m_controller != null) {
+            int pov = m_controller.getPOV();
+            if (pov != m_lastPOV) {
+                switch (pov) {
+                    case POV_UP:   m_pivotOffset += PIVOT_STEP; break;
+                    case POV_DOWN: m_pivotOffset -= PIVOT_STEP; break;
+                }
+            }
+            m_lastPOV = pov;
+        }
+
         // 1. 读取 limelight fiducials (每3周期)
         if (++m_execCount >= 3) {
             m_execCount = 0;
@@ -85,8 +115,9 @@ public class AutoAimAndShootCommand extends Command {
             SmartDashboard.putNumber("AutoAimShoot/hubCenterTxnc", hubTxnc);
             SmartDashboard.putNumber("AutoAimShoot/horizDist", horizontalDistance);
             if (horizontalDistance > 0) {
-                double pivotAngle = VisionUtil.lookupPivotAngle(horizontalDistance);
+                double pivotAngle = VisionUtil.lookupPivotAngle(horizontalDistance) + m_pivotOffset;
                 m_pivot.setTargetAngle(pivotAngle);
+                SmartDashboard.putNumber("AutoAimShoot/pivotOffset", m_pivotOffset);
             }
         } else if (!m_isShooting) {
             // === Odometry fallback — compute angle to alliance hub ===
