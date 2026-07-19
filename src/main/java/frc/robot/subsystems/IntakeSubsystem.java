@@ -16,7 +16,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.IntakeConstants;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 
 public class IntakeSubsystem extends SubsystemBase {
 
@@ -111,6 +110,18 @@ public class IntakeSubsystem extends SubsystemBase {
         setDeployAngle(0);
     }
 
+    /** Returns the average deploy angle in degrees (left + right) / 2. */
+    public double getDeployAngleDegrees() {
+        double leftDeg = (m_deployLeft.getPosition().getValueAsDouble() / GEAR_RATIO) * 360.0;
+        double rightDeg = (-m_deployRight.getPosition().getValueAsDouble() / GEAR_RATIO) * 360.0;
+        return (leftDeg + rightDeg) / 2.0;
+    }
+
+    /** Returns true if deploy is within deadband of the target angle. */
+    public boolean isDeployAtTarget(double targetDegrees) {
+        return Math.abs(getDeployAngleDegrees() - targetDegrees) <= IntakeConstants.DEPLOY_DEADBAND_DEGREES;
+    }
+
     public void toggleDeploy() {
         if (deployExtended) {
             deployExtended = false;
@@ -130,7 +141,27 @@ public class IntakeSubsystem extends SubsystemBase {
 
     // // --- 封装为 Commands ---
 
-    // 全自动进件指令：包含部署、等待、旋转，以及松开时的强制复位
+    /** Deploy intake to target angle, wait until within deadband. No roller. */
+    public Command deployIntakeCommand() {
+        return Commands.sequence(
+            Commands.runOnce(() -> {
+                double left = m_deployLeft.getPosition().getValueAsDouble();
+                double right = -m_deployRight.getPosition().getValueAsDouble();
+                double diff = Math.abs((left - right) / GEAR_RATIO * 360.0);
+
+                if (diff > SYNC_TOLERANCE_DEGREES) {
+                    double averageDeg = (left + right) / GEAR_RATIO * 360.0;
+                    setDeployAngle(averageDeg);
+                } else {
+                    setDeployAngle(TARGET_DEPLOY_ANGLE_DEGREES);
+                }
+            }),
+            Commands.waitUntil(() -> isDeployAtTarget(TARGET_DEPLOY_ANGLE_DEGREES))
+                .withTimeout(2.0)
+        );
+    }
+
+    // 全自动进件指令：包含部署、等待到位、旋转，以及松开时的强制复位
     public Command acquireFuelCommand(BooleanSupplier reverse) {
         return Commands.sequence(
             Commands.runOnce(() -> {
@@ -140,23 +171,20 @@ public class IntakeSubsystem extends SubsystemBase {
 
                 if (diff > SYNC_TOLERANCE_DEGREES) {
                     double averageDeg = (left + right) / GEAR_RATIO * 360.0;
-                    // 如果误差大，先同步（这里简单地强制设为 0 度对齐）
-                    setDeployAngle(averageDeg); 
+                    setDeployAngle(averageDeg);
                 } else {
-                    // 误差小，直接执行
                     setDeployAngle(TARGET_DEPLOY_ANGLE_DEGREES);
                 }
             }),
-            
-            Commands.runOnce(() -> System.out.println("Step 2: Waiting...")),
-            new WaitCommand(0.25),
-            
-            Commands.runOnce(() -> System.out.println("Step 3: Starting Roller...")),
+
+            // Wait until deploy is within deadband of target angle (max 2s)
+            Commands.waitUntil(() -> isDeployAtTarget(TARGET_DEPLOY_ANGLE_DEGREES))
+                .withTimeout(2.0),
+
             this.run(() -> {
                 setRollerSpeed(reverse.getAsBoolean() ? -INTAKE_SPEED : INTAKE_SPEED);
             })
         ).finallyDo((interrupted) -> {
-            System.out.println("Sequence Finished or Interrupted! Status: " + interrupted);
             setRollerSpeed(0);
             setDeployFree();
         });

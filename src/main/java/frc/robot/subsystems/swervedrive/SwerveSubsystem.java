@@ -6,10 +6,16 @@ import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -27,8 +33,14 @@ import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
 public class SwerveSubsystem extends SubsystemBase {
 
   private final SwerveDrive swerveDrive;
+  private final Field2d field = new Field2d();
+  private final NetworkTableEntry m_robotPose3dEntry;
   private int m_odometryCounter = 0;
   private static final int ODOMETRY_INTERVAL = 2; // Update every 2nd cycle (40ms)
+  private int m_diagCounter = 0;
+  private static final int DIAG_INTERVAL = 10; // Every 10 cycles = 200ms
+
+  private static final String[] MODULE_NAMES = {"FrontLeft", "FrontRight", "BackLeft", "BackRight"};
 
   public SwerveSubsystem(File directory) {
     SwerveDriveTelemetry.verbosity = TelemetryVerbosity.NONE;
@@ -41,9 +53,13 @@ public class SwerveSubsystem extends SubsystemBase {
     swerveDrive.setHeadingCorrection(false); 
     swerveDrive.setCosineCompensator(false);
     swerveDrive.setAngularVelocityCompensation(true, true, 0.1); 
-    swerveDrive.setModuleEncoderAutoSynchronize(false, 1); 
-    
+    swerveDrive.setModuleEncoderAutoSynchronize(false, 1);
+
     setupPathPlanner();
+
+    SmartDashboard.putData("Field", field);
+    m_robotPose3dEntry = NetworkTableInstance.getDefault()
+        .getEntry("AdvantageScope/RobotPose");
 
     // 2. 在 SwerveSubsystem 的构造函数最后，把部件推送到 SmartDashboard
   }
@@ -53,6 +69,35 @@ public class SwerveSubsystem extends SubsystemBase {
     if (++m_odometryCounter >= ODOMETRY_INTERVAL) {
       m_odometryCounter = 0;
       swerveDrive.updateOdometry();
+    }
+
+    // Diagnostic logging for rotation debugging — every 200ms
+    if (++m_diagCounter >= DIAG_INTERVAL) {
+      m_diagCounter = 0;
+
+      // Robot pose — Field2d for AdvantageScope Field view
+      Pose2d pose = getPose();
+      field.setRobotPose(pose);
+      SmartDashboard.putNumber("Drive/HeadingDeg", pose.getRotation().getDegrees());
+
+      // Robot pose as Pose3d for AdvantageScope 3D view (x, y, z, qw, qx, qy, qz)
+      Pose3d pose3d = new Pose3d(pose);
+      var q = pose3d.getRotation().getQuaternion();
+      m_robotPose3dEntry.setDoubleArray(new double[]{
+          pose3d.getX(), pose3d.getY(), pose3d.getZ(),
+          q.getW(), q.getX(), q.getY(), q.getZ()
+      });
+
+      // IMU yaw (raw)
+      SmartDashboard.putNumber("Drive/GyroYaw", swerveDrive.getYaw().getDegrees());
+
+      // Module states — key for diagnosing rotation issue
+      SwerveModuleState[] states = getSwerveDrive().getStates();
+      for (int i = 0; i < states.length && i < MODULE_NAMES.length; i++) {
+        String prefix = "Drive/Module/" + MODULE_NAMES[i];
+        SmartDashboard.putNumber(prefix + "/AngleDeg", states[i].angle.getDegrees());
+        SmartDashboard.putNumber(prefix + "/SpeedMPS", states[i].speedMetersPerSecond);
+      }
     }
   }
 

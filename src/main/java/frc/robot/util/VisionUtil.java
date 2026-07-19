@@ -53,6 +53,87 @@ public final class VisionUtil {
     }
 
     /**
+     * Find the best (closest) hub tag from visible fiducials.
+     * @return the best hub tag, or null if none visible
+     */
+    public static RawFiducial findBestHubTag(RawFiducial[] fiducials, int[] hubTagIds) {
+        if (fiducials == null || fiducials.length == 0) return null;
+        RawFiducial best = null;
+        double minDist = Double.MAX_VALUE;
+        for (RawFiducial f : fiducials) {
+            if (!isTargetTag(f.id, hubTagIds)) continue;
+            if (f.distToRobot < minDist) {
+                minDist = f.distToRobot;
+                best = f;
+            }
+        }
+        return best;
+    }
+
+    /**
+     * Compute parallax-corrected horizontal distance from camera to hub center.
+     * Uses the detected tag's tync and the known tag→hub offset (from field layout JSON)
+     * to estimate the distance to the hub center, not the tag itself.
+     *
+     * @param tag         Best detected hub tag (from findBestHubTag)
+     * @param hubCenter   Hub center Translation2d (from VisionConstants)
+     * @return horizontal distance to hub center in meters, or -1 if invalid
+     */
+    public static double computeHubCenterDistance(RawFiducial tag, Translation2d hubCenter) {
+        if (tag == null) return -1;
+
+        double distToTag = computeHorizontalDistance(tag.tync);
+        if (distToTag <= 0) return -1;
+
+        Translation2d offset = VisionConstants.getTagToHubOffset(tag.id, hubCenter);
+        // Project offset onto the robot→tag viewing direction
+        double tagBearingRad = Math.toRadians(tag.txnc);
+        double cosB = Math.cos(tagBearingRad);
+        double sinB = Math.sin(tagBearingRad);
+        // Parallel component: how much closer/further hub is vs tag
+        double offsetParallel = offset.getX() * cosB - offset.getY() * sinB;
+        double correctedDist = distToTag + offsetParallel;
+        return Math.max(0.1, correctedDist);
+    }
+
+    /**
+     * Compute parallax-corrected txnc (turret bearing) to hub center.
+     * Projects the tag→hub offset into the camera's horizontal plane to find
+     * the angular offset from the tag to the hub center.
+     *
+     * @param tag         Best detected hub tag
+     * @param hubCenter   Hub center Translation2d (from VisionConstants)
+     * @return corrected txnc (degrees), or NaN if invalid
+     */
+    public static double computeHubCenterTxnc(RawFiducial tag, Translation2d hubCenter) {
+        if (tag == null) return Double.NaN;
+
+        double distToTag = computeHorizontalDistance(tag.tync);
+        if (distToTag <= 0.1) return tag.txnc; // too close for meaningful correction
+
+        Translation2d offset = VisionConstants.getTagToHubOffset(tag.id, hubCenter);
+        double tagBearingRad = Math.toRadians(tag.txnc);
+        double cosB = Math.cos(tagBearingRad);
+        double sinB = Math.sin(tagBearingRad);
+        // Perpendicular component: angular offset from tag to hub in camera view
+        double offsetPerp = -offset.getX() * sinB + offset.getY() * cosB;
+        double angleCorrectionDeg = Math.toDegrees(Math.atan2(offsetPerp, distToTag));
+        return tag.txnc + angleCorrectionDeg;
+    }
+
+    /**
+     * Compute horizontal distance from robot to hub center using field layout.
+     * Used as odometry fallback when no Limelight target is visible.
+     *
+     * @param robotPose  Current robot pose from swerve odometry
+     * @param hubCenter  Hub center Translation2d (from VisionConstants.HUB_POSITION_*)
+     * @return horizontal distance in meters
+     */
+    public static double computeDistanceToHubCenter(Pose2d robotPose, Translation2d hubCenter) {
+        return robotPose.getTranslation().getDistance(hubCenter);
+    }
+
+    /**
      * Compute horizontal distance from limelight tync using camera mount geometry.
      */
     public static double computeHorizontalDistance(double tync) {

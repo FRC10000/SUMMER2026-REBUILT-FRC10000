@@ -8,15 +8,13 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants.OperatorConstants;
-import frc.robot.Constants.PassShootConstants;
 import frc.robot.commands.AutoAimAndShootCommand;
 import frc.robot.commands.AutoAimCommand;
-import frc.robot.commands.AutoShootCommand;
 import frc.robot.commands.IntakeRetractCommand;
 import frc.robot.commands.PassShootCommand;
+import frc.robot.commands.ShooterTuningCommand;
 import frc.robot.subsystems.FeederSubsystem;
 import frc.robot.subsystems.FlywheelSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
@@ -47,7 +45,7 @@ public class RobotContainer {
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(),
           () -> applyInputCurve(driverXbox.getLeftY()),
           () -> applyInputCurve(driverXbox.getLeftX()))
-      .withControllerRotationAxis(() -> -driverXbox.getRightX())
+      .withControllerRotationAxis(() -> -applyRotationCurve(driverXbox.getRightX()))
       .allianceRelativeControl(true);
 
   public RobotContainer() {
@@ -66,10 +64,34 @@ public class RobotContainer {
         Commands.runOnce(flywheel::stop, flywheel));
     NamedCommands.registerCommand("pass_shoot",
         new PassShootCommand(drivebase, turret, flywheel, pivot, feeder));
-    NamedCommands.registerCommand("auto_aim", new AutoAimCommand(drivebase, turret, pivot));
+    NamedCommands.registerCommand("auto_aim", new AutoAimCommand(turret, pivot));
+
+    // Auto-specific named commands
+    NamedCommands.registerCommand("intake_deploy", intake.deployIntakeCommand());
+    NamedCommands.registerCommand("intake_acquire", intake.acquireFuelCommand(() -> false));
+    NamedCommands.registerCommand("auto_aim_shoot",
+        new AutoAimAndShootCommand(drivebase, turret, pivot, flywheel, feeder));
+    NamedCommands.registerCommand("intake_retract", new IntakeRetractCommand(intake));
+
+    // Shoot 2s → retract intake (shooter keeps going) → shoot 3s more — total 5s
+    NamedCommands.registerCommand("shoot_retract_shoot", Commands.deadline(
+        new AutoAimAndShootCommand(drivebase, turret, pivot, flywheel, feeder),
+        Commands.sequence(
+            Commands.waitSeconds(2.0),
+            Commands.runOnce(() -> {
+                intake.setRollerSpeed(0);
+                intake.setDeployBack();
+            }),
+            Commands.waitSeconds(3.0)
+        )
+    ));
 
     autoChooser = AutoBuilder.buildAutoChooser();
-    // 按照需求清理 SmartDashboard，如果你连 Auto Chooser 都不想要，可以注释掉下面这行
+    // Default option: do nothing (safe fallback if no auto is selected)
+    autoChooser.setDefaultOption("Do Nothing", Commands.none());
+    // Programmatic auto: aim and shoot from starting position
+    autoChooser.addOption("Shoot Only",
+        new AutoAimAndShootCommand(drivebase, turret, pivot, flywheel, feeder));
     SmartDashboard.putData("Auto Choose", autoChooser);
   }
 
@@ -86,14 +108,15 @@ public class RobotContainer {
     // --- INTAKE DEPLOY ---
     driverXbox.povUp().onTrue(Commands.runOnce(intake::deployOut, intake));
     driverXbox.povDown().onTrue(Commands.runOnce(intake::setDeployBack, intake));
-    driverXbox.povLeft().onTrue(Commands.runOnce(() -> {
-      turretTestAngle -= 15.0;
-      turret.setTargetAngle(turretTestAngle);
-    }, turret));
-    driverXbox.povRight().onTrue(Commands.runOnce(() -> {
-      turretTestAngle += 15.0;
-      turret.setTargetAngle(turretTestAngle);
-    }, turret));
+
+    // --- SHOOTER TUNING MODE (hold Start + D-pad) ---
+    // Start button held = tuning mode active
+    // D-pad Up/Down = adjust flywheel RPM, D-pad Left/Right = adjust pivot angle
+    // Turret auto-aims via Limelight the whole time
+    // (Start+Back together still zeros gyro — only fires when both are pressed)
+    driverXbox.start().whileTrue(new ShooterTuningCommand(
+        driverXbox.getHID(), turret, pivot, flywheel, feeder
+    ));
 
     // --- FLYWHEEL TEST ---
     driverXbox.leftBumper().whileTrue(intake.reverseIntakeCommand());
@@ -136,5 +159,13 @@ public class RobotContainer {
     double magnitude = Math.abs(deadbanded);
     return sign * OperatorConstants.MAX_TRANSLATION_SPEED
            * Math.pow(magnitude, OperatorConstants.CURVE_EXPONENT);
+  }
+
+  private static double applyRotationCurve(double raw) {
+    double deadbanded = MathUtil.applyDeadband(raw, OperatorConstants.ROTATION_DEADBAND);
+    if (deadbanded == 0) return 0;
+    double sign = Math.signum(deadbanded);
+    double magnitude = Math.abs(deadbanded);
+    return sign * Math.pow(magnitude, OperatorConstants.ROTATION_CURVE_EXPONENT);
   }
 }

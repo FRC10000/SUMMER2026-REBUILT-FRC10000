@@ -1,0 +1,75 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Red-Depo-Shoot"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "shoot_retract_shoot"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Red-Depo-Collect-Prepare"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "intake_deploy"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Red-Depo-Collect"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "intake_acquire"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Red-Depo-Shoot2"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "shoot_retract_shoot"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

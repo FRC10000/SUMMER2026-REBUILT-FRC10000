@@ -1,0 +1,101 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Red-Outpost-Start"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "intake_deploy"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Red-Outpost-Collect"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "intake_acquire"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Red-Outpost-Back"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "shoot_retract_shoot"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Red-Outpost-Second-Prepare"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "intake_deploy"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Red-Outpost-Second-Collect"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "intake_acquire"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

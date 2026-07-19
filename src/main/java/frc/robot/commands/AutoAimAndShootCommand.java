@@ -26,7 +26,8 @@ import frc.robot.util.VisionUtil;
 public class AutoAimAndShootCommand extends Command {
 
     private static final String LIMELIGHT_NAME = VisionConstants.BACK_LIMELIGHT;
-    private static final double FLYWHEEL_TOLERANCE_RPM = 200.0;
+    private static final double FLYWHEEL_RPM = 6000.0;
+    private static final double SHOOT_RPM_THRESHOLD = 5600.0;
 
     private final SwerveSubsystem m_drivebase;
     private final TurretSubsystem m_turret;
@@ -64,30 +65,28 @@ public class AutoAimAndShootCommand extends Command {
             m_cachedFiducials = LimelightHelpers.getRawFiducials(LIMELIGHT_NAME);
         }
 
-        // 2. 根据联盟选择目标 tag IDs
-        int[] targetIds = getTargetTagIds();
+        // 2. Find best hub tag and get hub center from JSON
+        int[] hubTagIds = getHubTagIds();
+        Translation2d hubCenter = getHubPosition();
+        RawFiducial bestTag = VisionUtil.findBestHubTag(m_cachedFiducials, hubTagIds);
 
-        // 3. 找最佳目标
-        RawFiducial bestTarget = VisionUtil.findNearestTarget(m_cachedFiducials, LIMELIGHT_NAME, targetIds);
-
-        // 4. Aim: limelight vision or odometry fallback
-        double targetFlywheelRpm = 1500;
-
-        if (bestTarget != null) {
-            // === Limelight vision — turret + pivot alignment ===
+        // 3. Aim: limelight vision (parallax-corrected) or odometry fallback
+        if (bestTag != null) {
+            // === Limelight vision — parallax-corrected hub center aiming ===
+            double hubTxnc = VisionUtil.computeHubCenterTxnc(bestTag, hubCenter);
             double currentTurretAngle = m_turret.getCurrentAngle();
-            double turretCorrection = Math.abs(bestTarget.txnc) > 1.5
-                ? VisionConstants.TURRET_KP * bestTarget.txnc : 0;
+            double turretCorrection = Math.abs(hubTxnc) > 1.5
+                ? VisionConstants.TURRET_KP * hubTxnc : 0;
             m_turret.setTargetAngle(currentTurretAngle + turretCorrection);
 
-            double horizontalDistance = VisionUtil.computeHorizontalDistance(bestTarget.tync);
-            SmartDashboard.putNumber("AutoAimShoot/TagID", bestTarget.id);
+            // Parallax-corrected distance using tag→hub offset from field layout JSON
+            double horizontalDistance = VisionUtil.computeHubCenterDistance(bestTag, hubCenter);
+            SmartDashboard.putNumber("AutoAimShoot/bestTagID", bestTag.id);
+            SmartDashboard.putNumber("AutoAimShoot/hubCenterTxnc", hubTxnc);
             SmartDashboard.putNumber("AutoAimShoot/horizDist", horizontalDistance);
-            SmartDashboard.putNumber("AutoAimShoot/txnc", bestTarget.txnc);
             if (horizontalDistance > 0) {
                 double pivotAngle = VisionUtil.lookupPivotAngle(horizontalDistance);
                 m_pivot.setTargetAngle(pivotAngle);
-                targetFlywheelRpm = VisionUtil.lookupFlywheelRPM(horizontalDistance);
             }
         } else if (!m_isShooting) {
             // === Odometry fallback — compute angle to alliance hub ===
@@ -101,10 +100,10 @@ public class AutoAimAndShootCommand extends Command {
         }
 
         // === Shoot logic ===
-        m_flywheel.setTargetRPM(targetFlywheelRpm);
+        m_flywheel.setTargetRPM(FLYWHEEL_RPM);
 
         // 飞轮就绪或已在射击序列中
-        boolean flywheelReady = Math.abs(m_flywheel.getCurrentRPM() - targetFlywheelRpm) <= FLYWHEEL_TOLERANCE_RPM;
+        boolean flywheelReady = m_flywheel.getCurrentRPM() >= SHOOT_RPM_THRESHOLD;
 
         if (flywheelReady || m_isShooting) {
             if (!m_isShooting) {
@@ -119,7 +118,7 @@ public class AutoAimAndShootCommand extends Command {
             if (shootTimer.get() >= 0.3) {
                 m_feeder.shootFeeder();
             }
-        } else if (bestTarget != null) {
+        } else if (bestTag != null) {
             // 有目标但飞轮还没到，feeder 保持 idle
             m_feeder.idleMod();
         }
@@ -136,12 +135,12 @@ public class AutoAimAndShootCommand extends Command {
         m_isShooting = false;
     }
 
-    private int[] getTargetTagIds() {
+    private int[] getHubTagIds() {
         var alliance = DriverStation.getAlliance();
         if (alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red) {
-            return VisionConstants.RED_TAG_IDS;
+            return VisionConstants.RED_HUB_TAGS;
         }
-        return VisionConstants.BLUE_TAG_IDS;
+        return VisionConstants.BLUE_HUB_TAGS;
     }
 
     private Translation2d getHubPosition() {

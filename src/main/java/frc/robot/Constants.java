@@ -10,10 +10,10 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.apriltag.AprilTag;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import java.util.ArrayList;
-import java.util.List;
+import edu.wpi.first.wpilibj.Filesystem;
+
+import java.io.IOException;
 import swervelib.math.Matter;
 
 /**
@@ -56,6 +56,10 @@ public final class Constants
     // Joystick input curve: output = maxSpeed * |x|^exponent
     public static final double MAX_TRANSLATION_SPEED = 0.6;
     public static final double CURVE_EXPONENT        = 2.41; // f(0.75) = 0.30
+
+    // Rotation input curve: deadband + curve, output in [-1, 1]
+    public static final double ROTATION_DEADBAND     = 0.2;
+    public static final double ROTATION_CURVE_EXPONENT = 2.41;
 
     // Set to false to disable drivetrain (for subsystem testing)
     public static final boolean DRIVE_ENABLED  = true;
@@ -108,81 +112,75 @@ public final class Constants
       public static final int[] RED_TAG_IDS = {10, 11};   // Red alliance: priority 10
       public static final int[] BLUE_TAG_IDS = {26, 27};  // Blue alliance: priority 26
 
+      // Hub center estimation tags (all tags around the hub/reef per alliance)
+      public static final int[] RED_HUB_TAGS  = {2, 5, 8, 9, 10, 11};
+      public static final int[] BLUE_HUB_TAGS = {18, 21, 24, 25, 26, 27};
+
       // Turret PID for txnc tracking
       public static final double TURRET_KP = 0.5; // Proportional gain for txnc correction (tune on robot)
 
       // === PhotonVision Constants ===
 
-      // AprilTag field layout for Reefscape 2026 (built from deploy/fieldmap/FRC2026_ANDYMARK.fmap)
-      public static final AprilTagFieldLayout APRIL_TAG_FIELD_LAYOUT = buildFieldLayout();
+      public static final AprilTagFieldLayout APRIL_TAG_FIELD_LAYOUT = loadFieldLayout();
 
-      private static AprilTagFieldLayout buildFieldLayout() {
-          List<AprilTag> tags = new ArrayList<>();
-          // Tag positions extracted from FRC2026_ANDYMARK.fmap (x, y, z in meters)
-          tags.add(new AprilTag(1,  new Pose3d(new Translation3d( 3.605,  3.390, 0.889), new Rotation3d())));
-          tags.add(new AprilTag(2,  new Pose3d(new Translation3d( 3.642,  0.603, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(3,  new Pose3d(new Translation3d( 3.039,  0.355, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(4,  new Pose3d(new Translation3d( 3.039,  0.000, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(5,  new Pose3d(new Translation3d( 3.642, -0.604, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(6,  new Pose3d(new Translation3d( 3.605, -3.390, 0.889), new Rotation3d())));
-          tags.add(new AprilTag(7,  new Pose3d(new Translation3d( 3.680, -3.390, 0.889), new Rotation3d())));
-          tags.add(new AprilTag(8,  new Pose3d(new Translation3d( 3.998, -0.604, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(9,  new Pose3d(new Translation3d( 4.246, -0.356, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(10, new Pose3d(new Translation3d( 4.246,  0.000, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(11, new Pose3d(new Translation3d( 3.998,  0.603, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(12, new Pose3d(new Translation3d( 3.680,  3.390, 0.889), new Rotation3d())));
-          tags.add(new AprilTag(13, new Pose3d(new Translation3d( 8.240,  3.370, 0.552), new Rotation3d())));
-          tags.add(new AprilTag(14, new Pose3d(new Translation3d( 8.240,  2.939, 0.552), new Rotation3d())));
-          tags.add(new AprilTag(15, new Pose3d(new Translation3d( 8.240,  0.291, 0.552), new Rotation3d())));
-          tags.add(new AprilTag(16, new Pose3d(new Translation3d( 8.240, -0.141, 0.552), new Rotation3d())));
-          tags.add(new AprilTag(17, new Pose3d(new Translation3d(-3.610, -3.390, 0.889), new Rotation3d())));
-          tags.add(new AprilTag(18, new Pose3d(new Translation3d(-3.647, -0.604, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(19, new Pose3d(new Translation3d(-3.044, -0.356, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(20, new Pose3d(new Translation3d(-3.044,  0.000, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(21, new Pose3d(new Translation3d(-3.647,  0.603, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(22, new Pose3d(new Translation3d(-3.610,  3.390, 0.889), new Rotation3d())));
-          tags.add(new AprilTag(23, new Pose3d(new Translation3d(-3.685,  3.390, 0.889), new Rotation3d())));
-          tags.add(new AprilTag(24, new Pose3d(new Translation3d(-4.003,  0.603, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(25, new Pose3d(new Translation3d(-4.251,  0.355, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(26, new Pose3d(new Translation3d(-4.251,  0.000, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(27, new Pose3d(new Translation3d(-4.003, -0.604, 1.124), new Rotation3d())));
-          tags.add(new AprilTag(28, new Pose3d(new Translation3d(-3.685, -3.390, 0.889), new Rotation3d())));
-          tags.add(new AprilTag(29, new Pose3d(new Translation3d(-8.245, -3.371, 0.552), new Rotation3d())));
-          tags.add(new AprilTag(30, new Pose3d(new Translation3d(-8.245, -2.939, 0.552), new Rotation3d())));
-          tags.add(new AprilTag(31, new Pose3d(new Translation3d(-8.245, -0.291, 0.552), new Rotation3d())));
-          tags.add(new AprilTag(32, new Pose3d(new Translation3d(-8.245,  0.140, 0.552), new Rotation3d())));
-          // Field dimensions: ~16.54m x 8.13m (ReBuilt 2026)
-          return new AprilTagFieldLayout(tags, 16.54, 8.13);
+      private static AprilTagFieldLayout loadFieldLayout() {
+          try {
+              return new AprilTagFieldLayout(
+                  Filesystem.getDeployDirectory().toPath().resolve("apriltags/2026RebuiltAndymark.json"));
+          } catch (IOException e) {
+              throw new RuntimeException("Failed to load AprilTag field layout", e);
+          }
       }
 
       // PhotonVision cameras (names must match PhotonVision UI config)
       public static final String PHOTON_RIGHT = "photon-right";
       public static final String PHOTON_LEFT  = "photon-left";
 
-      // Camera mounting transforms (robot-to-camera) — TUNE AFTER CAD
+      // Camera mounting transforms (robot-to-camera) — cameras face sideways, landscape mount
       public static final Transform3d RIGHT_CAMERA_TRANSFORM = new Transform3d(
           new Translation3d(
-              Units.inchesToMeters(0),   // X: forward/back from robot center
-              Units.inchesToMeters(-6),  // Y: left/right (negative = right side)
-              Units.inchesToMeters(21)   // Z: height from floor
+              -0.256,   // X: forward/back from robot center (meters)
+              -0.24,    // Y: right side
+              0.52      // Z: height from floor
           ),
-          new Rotation3d(0, 0, 0)       // Roll, Pitch, Yaw (facing forward)
+          new Rotation3d(0, Units.degreesToRadians(20), Units.degreesToRadians(90))  // Roll=0, Pitch=20°, Yaw=-90° (faces right)
       );
 
       public static final Transform3d LEFT_CAMERA_TRANSFORM = new Transform3d(
           new Translation3d(
-              Units.inchesToMeters(0),
-              Units.inchesToMeters(6),   // Y: positive = left side
-              Units.inchesToMeters(21)
+              -0.256,
+              0.3,      // Y: left side
+              0.52
           ),
-          new Rotation3d(0, 0, 0)       // Roll, Pitch, Yaw (facing forward)
+          new Rotation3d(0, Units.degreesToRadians(20), Units.degreesToRadians(-90))   // Roll=0, Pitch=20°, Yaw=+90° (faces left)
       );
 
-      // Alliance Hub positions (separate for Red and Blue)
-      // Red hub: center of tags {10, 11} at x≈4.12, y≈0.30
-      // Blue hub: center of tags {26, 27} at x≈-4.13, y≈-0.30
-      public static final Translation2d HUB_POSITION_RED  = new Translation2d(4.122, 0.302);
-      public static final Translation2d HUB_POSITION_BLUE = new Translation2d(-4.127, -0.302);
+      // Alliance Hub positions — computed from FRC2026_ANDYMARK.fmap AprilTag layout
+      // Red hub:  center of tags {2, 10, 5}   → (12.103, 4.021)
+      // Blue hub: center of tags {18, 26, 21}  → (4.410, 4.021)
+      private static Translation2d tagCenter(int... ids) {
+          double sx = 0, sy = 0;
+          for (int id : ids) {
+              Pose3d p = APRIL_TAG_FIELD_LAYOUT.getTagPose(id).orElseThrow();
+              sx += p.getX();
+              sy += p.getY();
+          }
+          return new Translation2d(sx / ids.length, sy / ids.length);
+      }
+      // Hub centers from 3 primary reef tags (from 2026RebuiltAndymark.json)
+      public static final Translation2d HUB_POSITION_RED  = tagCenter(2, 10, 5);   // (12.103, 4.021)
+      public static final Translation2d HUB_POSITION_BLUE = tagCenter(18, 26, 21); // (4.410, 4.021)
+
+      /**
+       * Compute tag→hub offset vector (hub center minus tag position) for a given tag ID.
+       * Returns offset in field coordinates (meters). Used for parallax correction
+       * when the Limelight sees a tag but we want to aim at the hub center.
+       */
+      public static Translation2d getTagToHubOffset(int tagId, Translation2d hubCenter) {
+          Pose3d tagPose = APRIL_TAG_FIELD_LAYOUT.getTagPose(tagId).orElse(null);
+          if (tagPose == null) return new Translation2d();
+          return hubCenter.minus(new Translation2d(tagPose.getX(), tagPose.getY()));
+      }
   }
 
   public static final class FeederConstants {
@@ -225,6 +223,7 @@ public final class Constants
       public static final double FULL_DEPLOY_DEGREES = -4 * 360; // -1440
       public static final double INTAKE_SPEED = -1.0;
       public static final double SYNC_TOLERANCE_DEGREES = 5.0;
+      public static final double DEPLOY_DEADBAND_DEGREES = 10.0;
       public static final double DEPLOY_KP = 1.1;
       public static final double DEPLOY_KD = 0.2;
       public static final double STATOR_CURRENT_LIMIT = 35.0;
